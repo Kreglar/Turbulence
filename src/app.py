@@ -23,7 +23,7 @@ class Application(qtw.QMainWindow):
         self.projectData = project.NewProjectFile()
 
         # set window properties
-        self.setWindowTitle("NAME TBD - FILE.EXT")
+        self.setWindowTitle("Turbulence - FILE.EXT")
         self.setGeometry(100, 100, 1400, 900)
 
         # set menubar
