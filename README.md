@@ -2,7 +2,7 @@
 
 
 ## Table of Contents
-- [Background](#background)
+- [License](#License)
 - [Description/Overview](#descriptionoverview)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -13,9 +13,9 @@
 - [Authors & Acknowledgements](#authors--acknowledgement)
 
 
-## Background
+## License
 
-When I first started developing for the Sega Genesis I noticed it was really tedious to create asset (tilesets, tilemaps etc..) files from scratch. This project is my aim to make that task much easier to get started with. I know applications like this already exist, but I wanted one that would work for me (and hopefully you).
+This project is licensed under the GNU GPLv3 (GNU General Public License v3.0) for more information read: [LICENSE.txt](LICENSE.txt)
 
 
 ## Description/Overview
