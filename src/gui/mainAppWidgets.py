@@ -80,9 +80,9 @@ class Toolbar(qtw.QToolBar):
         """ Add all the tools. """
         # list of tools
         tools = [
-            ("Move", qtg.QIcon("src/assets/moveTool.png")),
-            ("Select", qtg.QIcon("src/assets/selectTool.png")),
-            ("Brush", qtg.QIcon("src/assets/brushTool.png"))
+            ("Move", qtg.QIcon("resources/images/moveTool.png")),
+            ("Select", qtg.QIcon("resources/images/selectTool.png")),
+            ("Brush", qtg.QIcon("resources/images/brushTool.png"))
         ]
 
         # add each tool

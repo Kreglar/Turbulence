@@ -108,7 +108,7 @@ class TilesetPanel(qtw.QGraphicsView):
 
         # define constants
         self.mainApplication = mainApplication
-        self.background = qtg.QPixmap("src/assets/transparentBackground.png").scaled(4040, 4040)
+        self.background = qtg.QPixmap("resources/images/transparentBackground.png").scaled(4040, 4040)
 
         # scene/image init
         self.graphicsScene = qtw.QGraphicsScene()

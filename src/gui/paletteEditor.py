@@ -62,7 +62,7 @@ class ColorPanel(qtw.QWidget):
         super().__init__()
 
         # set the color picker
-        self.picker = ColorPicker("src/assets/colorPicker.png", 20)
+        self.picker = ColorPicker("resources/images/colorPicker.png", 20)
 
         # define layout
         layout = qtw.QVBoxLayout(self)
