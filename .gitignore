@@ -1,0 +1,39 @@
+# python
+__pychache__/
+*.py[codz]
+*.$py.class
+
+# virtual enviroments
+venv/
+env/
+.venv/
+ENV/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# build/packaging
+build/
+dist/
+*.spec
+*.egg-info/
+.eggs/
+
+# insatller logs
+pip-log.txt
+
+# testing
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
+
+# misc garbage
+*.log
+*.tmp
+*.bak
+*.swp
+*~
