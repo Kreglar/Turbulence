@@ -99,9 +99,6 @@ class PaletteVisual(qtw.QLabel):
 
         # default color is black
         self.currentColor = qtg.QColor(0, 0, 0)
-
-        # selection overlay
-        self.selectArea = common.SelectionOverlay()
     
     def setColor(self, color: qtg.QColor):
         """ Receive the signal and change the color. """
@@ -111,48 +108,27 @@ class PaletteVisual(qtw.QLabel):
         """ Get color at click event. """
         # left mouse click
         if event.button() == qtc.Qt.MouseButton.LeftButton:
-            # check for tool
-            if self.mainApplication.toolbar.selectedTool == "Brush":
-                # get the click position
-                clickPos = event.position().toPoint()
-                x = clickPos.x() // self.scale
+            # get the click position
+            clickPos = event.position().toPoint()
+            x = clickPos.x() // self.scale
 
-                # set the current color
-                color = data.Color(self.currentColor.red(), self.currentColor.green(), self.currentColor.blue())
-                self.mainApplication.projectData.palettes[self.paletteNum].AddColor(color, x)
+            # set the current color
+            color = data.Color(self.currentColor.red(), self.currentColor.green(), self.currentColor.blue())
+            self.mainApplication.projectData.palettes[self.paletteNum].AddColor(color, x)
+            # draw the color
+            painter = qtg.QPainter(self.img)
+            painter.setBrush(qtg.QBrush(self.currentColor))
+            painter.drawRect(x * self.scale, 0, self.scale, self.scale)
+            painter.end()
+            self.update()
 
-                # draw the color
-                painter = qtg.QPainter(self.img)
-                painter.setBrush(qtg.QBrush(self.currentColor))
-                painter.drawRect(x * self.scale, 0, self.scale, self.scale)
-                painter.end()
-                self.update()
-
-                # send the palette change signal
-                self.paletteChange.emit()
-            elif self.mainApplication.toolbar.selectedTool == "Select":
-                # get the click position
-                self.dragStart = event.position().toPoint()
-                self.selectArea.xPos = self.dragStart.x()
-                self.selectArea.yPos = self.dragStart.y()
-
-    def mouseMoveEvent(self, event):
-        """ When the mouse is moved. """
-        # left mouse click
-        if event.buttons() & qtc.Qt.MouseButton.LeftButton:
-            # check for tool
-            if self.mainApplication.toolbar.selectedTool == "Select":
-                # get the click position
-                clickPos = event.position().toPoint()
-                self.selectArea.width = abs(self.selectArea.xPos - clickPos.x())
-                self.selectArea.height = abs(self.selectArea.yPos - clickPos.y())
-                self.selectArea.PickupSelection(self.img)
+            # send the palette change signal
+            self.paletteChange.emit()
     
     def paintEvent(self, event):
         """ Draw the new pixmap. """
         painter = qtg.QPainter(self)
         painter.drawPixmap(0, 0, self.img)
-        painter.drawPixmap(self.selectArea.xPos, self.selectArea.yPos, self.selectArea.croppedPixmap)
         painter.end()
 
 class PalettePanel(qtw.QWidget):

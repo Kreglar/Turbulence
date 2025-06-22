@@ -30,10 +30,6 @@ class Application(qtw.QMainWindow):
         menu = mainAppWidgets.MenuBar(self)
         self.setMenuBar(menu)
 
-        # set toolbar
-        self.toolbar = mainAppWidgets.Toolbar(self)
-        self.addToolBar(self.toolbar)
-
         # windows for differnet editors
         editors = qtw.QTabWidget(self)
         # - palette editor

@@ -154,9 +154,7 @@ class TilesetPanel(qtw.QGraphicsView):
 
         # left mouse click
         if event.button() == qtc.Qt.MouseButton.LeftButton:
-            # check for tool
-            if self.mainApplication.toolbar.selectedTool == "Brush":
-                self.DrawPixels(event) # draw colors
+            self.DrawPixels(event) # draw colors
     
     def mouseMoveEvent(self, event):
         """ When the mouse is moved. """
@@ -171,9 +169,7 @@ class TilesetPanel(qtw.QGraphicsView):
 
         # left mouse click
         if event.buttons() & qtc.Qt.MouseButton.LeftButton:
-            # check for tool
-            if self.mainApplication.toolbar.selectedTool == "Brush":
-                self.DrawPixels(event) # draw colors
+            self.DrawPixels(event) # draw colors
     
     def mouseReleaseEvent(self, event):
         """ When the mouse is let go. """

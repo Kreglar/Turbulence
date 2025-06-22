@@ -24,27 +24,3 @@ class GridOverlay(qtw.QGraphicsItem):
         # draw horizontal gridlines
         for y in range(0, self.imageSize[1] + 1, self.gridSize):
             painter.drawLine(0, y, self.imageSize[0], y)
-
-class SelectionOverlay(qtw.QGraphicsItem):
-    def __init__(self):
-        super().__init__()
-
-        # globals
-        self.xPos = 0
-        self.yPos = 0
-        self.width = 0
-        self.height = 0
-        self.croppedPixmap = qtg.QPixmap(0, 0)
-
-    def PickupSelection(self, pixmap: qtg.QPixmap):
-        # create a copy of the pixmap that is cropped to the selection
-        self.croppedPixmap = pixmap.copy(self.xPos, self.yPos, self.width, self.height)
-    
-    def paint(self, painter, option, widget):
-        """ Paint the pixmap + outline. """
-        # draw the pixmap
-        painter.drawPixmap(self.croppedPixmap)
-
-        # draw the outline
-        painter.setPen(qtg.QPen(qtg.QPen(qtg.QColor(0, 255, 0), 5)))
-        painter.drawRect(0, 0, self.width, self.height)
