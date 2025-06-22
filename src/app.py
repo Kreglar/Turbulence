@@ -31,8 +31,8 @@ class Application(qtw.QMainWindow):
         self.setMenuBar(menu)
 
         # set toolbar
-        toolbar = mainAppWidgets.Toolbar(self)
-        self.addToolBar(toolbar)
+        self.toolbar = mainAppWidgets.Toolbar(self)
+        self.addToolBar(self.toolbar)
 
         # windows for differnet editors
         editors = qtw.QTabWidget(self)

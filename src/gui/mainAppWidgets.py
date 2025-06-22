@@ -33,7 +33,7 @@ class MenuBar(qtw.QMenuBar):
                 None,
                 "Quit"
             ],
-            "Edit": [],
+            "Edit": ["Undo", "Redo"],
             "View": []
         }
 
@@ -75,6 +75,9 @@ class Toolbar(qtw.QToolBar):
 
         # add tools
         self.AddTools()
+
+        # select a tool
+        self.toolsList[0].setChecked(True)
 
     def AddTools(self):
         """ Add all the tools. """

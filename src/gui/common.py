@@ -12,7 +12,7 @@ class GridOverlay(qtw.QGraphicsItem):
     def boundingRect(self): # needs to be overridden
         return qtc.QRectF(0, 0, *self.imageSize)
     
-    def paint(self, painter, option, widget = ...):
+    def paint(self, painter, option, widget):
         """ Paint the grid. """
         # define the pen
         painter.setPen(qtg.QPen(qtg.QColor(255, 255, 255), 0.0))
@@ -34,6 +34,17 @@ class SelectionOverlay(qtw.QGraphicsItem):
         self.yPos = 0
         self.width = 0
         self.height = 0
+        self.croppedPixmap = qtg.QPixmap(0, 0)
 
     def PickupSelection(self, pixmap: qtg.QPixmap):
-        pass
+        # create a copy of the pixmap that is cropped to the selection
+        self.croppedPixmap = pixmap.copy(self.xPos, self.yPos, self.width, self.height)
+    
+    def paint(self, painter, option, widget):
+        """ Paint the pixmap + outline. """
+        # draw the pixmap
+        painter.drawPixmap(self.croppedPixmap)
+
+        # draw the outline
+        painter.setPen(qtg.QPen(qtg.QPen(qtg.QColor(0, 255, 0), 5)))
+        painter.drawRect(0, 0, self.width, self.height)

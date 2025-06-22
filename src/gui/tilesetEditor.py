@@ -147,6 +147,11 @@ class TilesetPanel(qtw.QGraphicsView):
     
     def mousePressEvent(self, event):
         """ When the mouse is pressed down. """
+        # right mouse click
+        if event.button() == qtc.Qt.MouseButton.RightButton:
+            # start panning
+            self._lastPos = event.position().toPoint() # set new mouse pos
+
         # left mouse click
         if event.button() == qtc.Qt.MouseButton.LeftButton:
             # check for tool
