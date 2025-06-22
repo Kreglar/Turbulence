@@ -104,11 +104,31 @@ class TilePanel(qtw.QWidget):
         # set the tile picker
         self.picker = TilePicker(50, mainApplication)
 
-        # define layout
-        layout = qtw.QVBoxLayout(self)
-        layout.addWidget(qtw.QLabel("Tile Select"))
-        layout.addWidget(self.picker)
-        layout.addStretch()
+        # define the attribute buttons
+        self.priorityButton = qtw.QPushButton("Priority", self)
+        self.paletteButton = qtw.QPushButton("Palette", self)
+        self.hFlipButton = qtw.QPushButton("Horizontal Flip", self)
+        self.vFlipButton = qtw.QPushButton("Vertical Flip", self)
+
+        # define tile picker layout
+        pickerLayout = qtw.QVBoxLayout()
+        pickerLayout.addWidget(qtw.QLabel("Tile Select"))
+        pickerLayout.addWidget(self.picker)
+        pickerLayout.addStretch()
+
+        # define tile attribute layout
+        attributeLayout = qtw.QVBoxLayout()
+        attributeLayout.addWidget(qtw.QLabel("\tTile Attributes"))
+        attributeLayout.addWidget(self.priorityButton)
+        attributeLayout.addWidget(self.paletteButton)
+        attributeLayout.addWidget(self.hFlipButton)
+        attributeLayout.addWidget(self.vFlipButton)
+        attributeLayout.addStretch()
+
+        # define central layout
+        layout = qtw.QHBoxLayout(self)
+        layout.addLayout(pickerLayout)
+        layout.addLayout(attributeLayout)
 
         # define width
         self.setFixedWidth(340)
