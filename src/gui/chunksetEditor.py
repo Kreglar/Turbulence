@@ -110,6 +110,19 @@ class TilePanel(qtw.QWidget):
         self.hFlipButton = qtw.QPushButton("Horizontal Flip", self)
         self.vFlipButton = qtw.QPushButton("Vertical Flip", self)
 
+        # make buttons toggleable
+        self.priorityButton.setCheckable(True)
+        self.hFlipButton.setCheckable(True)
+        self.vFlipButton.setCheckable(True)
+
+        # link buttons to color change
+        self.priorityButton.clicked.connect(self.PriorityButtonPressed)
+        self.PriorityButtonPressed()
+        self.hFlipButton.clicked.connect(self.hFlipButtonPressed)
+        self.hFlipButtonPressed()
+        self.vFlipButton.clicked.connect(self.vFlipButtonPressed)
+        self.vFlipButtonPressed()
+
         # define tile picker layout
         pickerLayout = qtw.QVBoxLayout()
         pickerLayout.addWidget(qtw.QLabel("Tile Select"))
@@ -135,6 +148,42 @@ class TilePanel(qtw.QWidget):
 
         # link choosing items to setting properties
         self.itemsSelected.connect(self.picker.SetProperties)
+    
+    def PriorityButtonPressed(self):
+        """ Priority button is toggled. """
+        # see if button checked or not
+        if self.priorityButton.isChecked():
+            # the button just go checked
+            self.priorityButton.setText("High Priority")
+            self.priorityButton.setStyleSheet("background-color: green;")
+        else:
+            # the button just got unchecked
+            self.priorityButton.setText("Low Priority")
+            self.priorityButton.setStyleSheet("background-color: red;")
+    
+    def hFlipButtonPressed(self):
+        """ Horizontal flip button is toggled. """
+        # see if button checked or not
+        if self.hFlipButton.isChecked():
+            # the button just go checked
+            self.hFlipButton.setText("Horizontal Flip")
+            self.hFlipButton.setStyleSheet("background-color: green;")
+        else:
+            # the button just got unchecked
+            self.hFlipButton.setText("No Horizontal Flip")
+            self.hFlipButton.setStyleSheet("background-color: red;")
+    
+    def vFlipButtonPressed(self):
+        """ Vertical flip button is toggled. """
+        # see if button checked or not
+        if self.vFlipButton.isChecked():
+            # the button just go checked
+            self.vFlipButton.setText("Vertical Flip")
+            self.vFlipButton.setStyleSheet("background-color: green;")
+        else:
+            # the button just got unchecked
+            self.vFlipButton.setText("No Vertical Flip")
+            self.vFlipButton.setStyleSheet("background-color: red;")
 
 class ChunksetPanel(qtw.QGraphicsView):
     """ Panel allowing you to edit chunksets. """
