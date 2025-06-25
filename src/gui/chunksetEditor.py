@@ -4,6 +4,9 @@ from PyQt6 import QtWidgets as qtw, QtGui as qtg, QtCore as qtc
 # for common gui items
 from . import common
 
+# for rounding
+import math
+
 # for direct image manipulation
 import numpy
 
@@ -35,11 +38,13 @@ class TilePicker(qtw.QGraphicsView):
         self.pixmapItem = self.graphicsScene.addPixmap(self.img)
 
         # create selection overlay
-        self.overlay = qtg.QPixmap(scale, self.tileset.size * scale)
+        self.overlay = qtg.QPixmap(8, self.tileset.size * 8)
         self.overlay.fill(qtg.QColor(0, 0, 0, 0)) # fill tranasparent
+        self.overlayItem = self.graphicsScene.addPixmap(self.overlay)
+        self.DrawSelect(0)
 
         # fix the size
-        self.setFixedSize(scale + 16, scale * 16) # +16 makes room for the scroll bar
+        self.setFixedSize(scale + 16, scale * 13) # +16 makes room for the scroll bar
 
         # always have vertical scroll bar
         self.setVerticalScrollBarPolicy(qtc.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -52,6 +57,26 @@ class TilePicker(qtw.QGraphicsView):
         # set the scale
         self.resetTransform()
         self.scale(self.imgScale // 8, self.imgScale // 8)
+    
+    def mousePressEvent(self, event):
+        """ Get tile at click event. """
+        # get the click position
+        y = (event.position().toPoint().y() + self.verticalScrollBar().value()) // self.imgScale
+
+        # select
+        self.DrawSelect(y)
+
+        # emit color signal
+        self.tileSelected.emit(y)
+    
+    def DrawSelect(self, pos: int):
+        """ Draw the selection outline at pos tile. """
+        self.overlay.fill(qtg.QColor(0, 0, 0, 0)) # fill tranasparent
+        painter = qtg.QPainter(self.overlay)
+        painter.setPen(qtg.QPen(qtg.QColor(255, 0, 0), 1)) # color, width
+        painter.drawRect(qtc.QRect(0, pos * 8, 8, 8)) # draw for outline
+        painter.end()
+        self.overlayItem.setPixmap(self.overlay) # add the new pixmap
     
     def SetProperties(self, priority: bool, palette: int, hFlip: bool, vFlip: bool):
         """ Set the properties of what is selected. """
@@ -88,6 +113,14 @@ class TilePicker(qtw.QGraphicsView):
         for i, tile in enumerate(tileset):
             y = i * 8
             tileData = npPalette[numpy.array(tile, dtype=numpy.uint8)]
+            
+            # apply flips based on flags
+            if self.currentHFlip and i == 0:
+                for row in range(8):
+                    tileData[row] = tileData[row][::-1] # flip each row within the tile
+            if self.currentVFlip:
+                tileData = tileData[::-1] # flip the tile data horizontally
+
             imageArray[y:y+8, :8] = tileData
         
         self.img = qtg.QPixmap.fromImage(self.image)
@@ -102,7 +135,7 @@ class TilePanel(qtw.QWidget):
         super().__init__()
 
         # set the tile picker
-        self.picker = TilePicker(50, mainApplication)
+        self.picker = TilePicker(64, mainApplication)
 
         # define the attribute buttons
         self.priorityButton = qtw.QPushButton("Priority", self)
@@ -160,6 +193,9 @@ class TilePanel(qtw.QWidget):
             # the button just got unchecked
             self.priorityButton.setText("Low Priority")
             self.priorityButton.setStyleSheet("background-color: red;")
+        
+        # emit
+        self.EmitAttributes()
     
     def hFlipButtonPressed(self):
         """ Horizontal flip button is toggled. """
@@ -172,6 +208,9 @@ class TilePanel(qtw.QWidget):
             # the button just got unchecked
             self.hFlipButton.setText("No Horizontal Flip")
             self.hFlipButton.setStyleSheet("background-color: red;")
+        
+        # emit
+        self.EmitAttributes()
     
     def vFlipButtonPressed(self):
         """ Vertical flip button is toggled. """
@@ -185,12 +224,25 @@ class TilePanel(qtw.QWidget):
             self.vFlipButton.setText("No Vertical Flip")
             self.vFlipButton.setStyleSheet("background-color: red;")
 
+        # emit
+        self.EmitAttributes()
+    
+    def EmitAttributes(self):
+        """ Emit all the attributes of the tile selection. """
+        self.itemsSelected.emit(self.priorityButton.isChecked(), 0, self.hFlipButton.isChecked(), self.vFlipButton.isChecked())
+
 class ChunksetPanel(qtw.QGraphicsView):
     """ Panel allowing you to edit chunksets. """
 
     def SetTile(self, tileIndex):
         """ Change the current selected tile. """
         self.currentTileIndex = tileIndex
+    
+    def SetProperties(self, priority: bool, palette: int, hFlip: bool, vFlip: bool):
+        """ Set the properties of what is selected. """
+        self.currentPaletteIndex = palette
+        self.currentHFlip = hFlip
+        self.currentVFlip = vFlip
     
     def ResetImage(self):
         """ Redraw the image. """
@@ -213,7 +265,8 @@ class ChunksetEditor(qtw.QWidget):
         self.tilePanel = TilePanel(mainApplication)
         self.chunksetPanel = ChunksetPanel(mainApplication)
 
-        # connect color signal
+        # connect signals
+        self.tilePanel.itemsSelected.connect(self.chunksetPanel.SetProperties)
         self.tilePanel.picker.tileSelected.connect(self.chunksetPanel.SetTile)
 
         # add the panels
