@@ -206,7 +206,10 @@ class TilesetPanel(qtw.QGraphicsView):
     def DrawPixels(self, event: qtg.QMouseEvent):
         """ Draw pixels at event location. """
         # get the coords within the pixmap
-        coords = math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).x()), math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).y())
+        coords = (
+            math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).x()),
+            math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).y())
+        )
 
         # check if out of range
         if not (0 <= coords[0] < self.pixmap.width() and 0 <= coords[1] < self.pixmap.height()):
@@ -277,8 +280,9 @@ class TilesetPanel(qtw.QGraphicsView):
                 for x in range(8):
                     imageArray[tileY + y, tileX + x] = npPalette[row[x]]
         
+        # convert back to pixmap and update pixmap item
         self.pixmap = qtg.QPixmap.fromImage(image)
-        self.pixmapItem.setPixmap(self.pixmap) # update pixmap
+        self.pixmapItem.setPixmap(self.pixmap)
 
 class TilesetEditor(qtw.QWidget):
     """ Editor menu allowing you to edit the project's tileset. """

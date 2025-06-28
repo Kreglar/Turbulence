@@ -4,6 +4,9 @@ from PyQt6 import QtWidgets as qtw, QtGui as qtg, QtCore as qtc
 # for common gui items
 from . import common
 
+# for custom data types
+from utils import data
+
 # for rounding
 import math
 
@@ -115,7 +118,7 @@ class TilePicker(qtw.QGraphicsView):
             tileData = npPalette[numpy.array(tile, dtype=numpy.uint8)]
             
             # apply flips based on flags
-            if self.currentHFlip and i == 0:
+            if self.currentHFlip:
                 for row in range(8):
                     tileData[row] = tileData[row][::-1] # flip each row within the tile
             if self.currentVFlip:
@@ -233,6 +236,107 @@ class TilePanel(qtw.QWidget):
 
 class ChunksetPanel(qtw.QGraphicsView):
     """ Panel allowing you to edit chunksets. """
+    # signal for change in chunk
+    chunkChange = qtc.pyqtSignal()
+
+    def __init__(self, mainApplication: object):
+        super().__init__()
+
+        # define constants
+        self.mainApplication = mainApplication
+        self.background = qtg.QPixmap("resources/images/transparentBackground.png").scaled(4040, 4040)
+        self.chunkSize = mainApplication.projectData.chunkset.chunkSize
+        self.currentPriority = False
+        self.currentTileIndex = 0
+        self.currentPaletteIndex = 0
+        self.currentHFlip = False
+        self.currentVFlip = False
+
+        # scene/image init
+        self.graphicsScene = qtw.QGraphicsScene()
+        self.setScene(self.graphicsScene)
+
+        # pixmap
+        self.pixmap = qtg.QPixmap(32 * self.chunkSize * 8, 64 * self.chunkSize * 8)
+        self.pixmap.fill(qtg.QColor(0, 0, 0, 0))
+        self.pixmapItem = self.graphicsScene.addPixmap(self.pixmap)
+
+        # draw a grid ontop of the pixmap
+        self.graphicsScene.addItem(common.GridOverlay((self.pixmap.width(), self.pixmap.height()), 8 * self.chunkSize))
+
+        # set scroll area and center
+        self.setSceneRect(-5000, -5000, 10000, 10000)
+        self.centerOn(self.pixmapItem)
+
+        # for zoom/scroll
+        self._lastPos = qtc.QPoint()
+        self.zoom = 1.0
+
+        # allways show scroll bar and set transform/resize anchors
+        self.setHorizontalScrollBarPolicy(qtc.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setVerticalScrollBarPolicy(qtc.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setTransformationAnchor(qtw.QGraphicsView.ViewportAnchor.NoAnchor)
+        self.setResizeAnchor(qtw.QGraphicsView.ViewportAnchor.NoAnchor)
+
+        # set palette/color default
+        self.currentPaletteIndex = 0
+        self.currentTileIndex = 0
+    
+    def drawBackground(self, painter: qtg.QPainter, rect):
+        """ Draws a non-scrolling background. """
+        painter.resetTransform() # cancel zoom/pan so it doesn't scroll background
+        painter.drawPixmap(0, 0, self.background) # draws the background at (0, 0)
+
+    def mousePressEvent(self, event):
+        """ When the mouse is pressed down. """
+        # right mouse click
+        if event.button() == qtc.Qt.MouseButton.RightButton:
+            # start panning
+            self._lastPos = event.position().toPoint() # set new mouse pos
+
+        # left mouse click
+        if event.button() == qtc.Qt.MouseButton.LeftButton:
+            self.DrawTiles(event) # draw colors
+    
+    def mouseMoveEvent(self, event):
+        """ When the mouse is moved. """
+        # scroll image
+        if event.buttons() & qtc.Qt.MouseButton.RightButton:
+            delta = event.position().toPoint() - self._lastPos # get change between last and current mouse pos
+            self._lastPos = event.position().toPoint() # set new mouse pos
+
+            # change x/y scroll values
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - delta.x())
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta.y())
+
+        # left mouse click
+        if event.buttons() & qtc.Qt.MouseButton.LeftButton:
+            self.DrawTiles(event) # draw colors
+    
+    def mouseReleaseEvent(self, event):
+        """ When the mouse is let go. """
+        # send tilechange signal
+        if event.button() == qtc.Qt.MouseButton.LeftButton:
+            self.chunkChange.emit()
+    
+    def wheelEvent(self, event):
+        """ When the mouse is scrolled. """
+        # get scroll amount
+        angle = event.angleDelta().y()
+        if angle == 0:
+            return
+            
+        # zoom logic
+        zoomIn = angle > 0
+        zoomFactor = 1.15 if zoomIn else 1 / 1.15
+        self.zoom *= zoomFactor
+
+        # scale image centered on cursor
+        oldPos = self.mapToScene(event.position().toPoint())
+        self.scale(zoomFactor, zoomFactor)
+        newPos = self.mapToScene(event.position().toPoint())
+        delta = newPos - oldPos
+        self.translate(delta.x(), delta.y())
 
     def SetTile(self, tileIndex):
         """ Change the current selected tile. """
@@ -240,9 +344,61 @@ class ChunksetPanel(qtw.QGraphicsView):
     
     def SetProperties(self, priority: bool, palette: int, hFlip: bool, vFlip: bool):
         """ Set the properties of what is selected. """
+        self.currentPriority = priority
         self.currentPaletteIndex = palette
         self.currentHFlip = hFlip
         self.currentVFlip = vFlip
+    
+    def DrawTiles(self, event: qtg.QMouseEvent):
+        """ Draw tiles at event location. """
+        # get the coords within the pixmap
+        coords = (
+            (math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).x()) // 8) * 8,
+            (math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).y()) // 8) * 8
+        )
+
+        # check if out of range
+        if not (0 <= coords[0] < self.pixmap.width() and 0 <= coords[1] < self.pixmap.height()):
+            return
+        
+        # get index in chunkset
+        chunkX, chunkY = (coords[0] // 8) // self.chunkSize, (coords[1] // 8) // self.chunkSize
+        chunksPerRow = self.pixmap.width() // self.chunkSize
+        chunkIndex = (chunkY * chunksPerRow) + chunkX
+
+        if chunkIndex + 1 > self.mainApplication.projectData.chunkset.size:
+            return
+        
+        # get the tile data
+        tileArray = self.mainApplication.projectData.tileset.set[self.currentTileIndex]
+
+        # get the palette
+        palette = self.mainApplication.projectData.palettes[self.currentPaletteIndex].palette
+
+        # apply flips
+        if self.currentHFlip:
+            for y in range(8):
+                tileArray[y] = tileArray[y][::-1]
+        if self.currentVFlip:
+            tileArray = tileArray[::-1]
+
+        # apply to chunk in chunkset
+        self.mainApplication.projectData.chunkset.set[chunkIndex][chunkY][chunkX] = data.Tile(self.currentPaletteIndex, self.currentTileIndex, self.currentPriority, self.currentHFlip, self.currentVFlip)
+
+        # create pixmap image
+        pixmapImage = self.pixmap.toImage()
+
+        # apply tile
+        for y in range(8):
+            for x in range(8):
+                # get the color's index
+                colorIndex = tileArray[y][x]
+                # set pixel colors
+                pixmapImage.setPixelColor(coords[0] + x, coords[1] + y, qtg.QColor(palette[colorIndex].red, palette[colorIndex].green, palette[colorIndex].blue, 0 if colorIndex == 0 else 255))
+
+        # convert back to pixmap and update pixmap item
+        self.pixmap = qtg.QPixmap.fromImage(pixmapImage)
+        self.pixmapItem.setPixmap(self.pixmap)
     
     def ResetImage(self):
         """ Redraw the image. """
