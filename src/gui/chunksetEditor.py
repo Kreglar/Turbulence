@@ -363,7 +363,7 @@ class ChunksetPanel(qtw.QGraphicsView):
         
         # get index in chunkset
         chunkX, chunkY = (coords[0] // 8) // self.chunkSize, (coords[1] // 8) // self.chunkSize
-        chunksPerRow = self.pixmap.width() // self.chunkSize
+        chunksPerRow = self.pixmap.width() // (self.chunkSize * 8)
         chunkIndex = (chunkY * chunksPerRow) + chunkX
 
         if chunkIndex + 1 > self.mainApplication.projectData.chunkset.size:
@@ -382,8 +382,12 @@ class ChunksetPanel(qtw.QGraphicsView):
         if self.currentVFlip:
             tileArray = tileArray[::-1]
 
+        # get coords withing chunk
+        withinX = coords[0] % self.chunkSize
+        withinY = coords[1] % self.chunkSize
+
         # apply to chunk in chunkset
-        self.mainApplication.projectData.chunkset.set[chunkIndex][chunkY][chunkX] = data.Tile(self.currentPaletteIndex, self.currentTileIndex, self.currentPriority, self.currentHFlip, self.currentVFlip)
+        self.mainApplication.projectData.chunkset.set[chunkIndex][withinX][withinY] = data.Tile(self.currentPaletteIndex, self.currentTileIndex, self.currentPriority, self.currentHFlip, self.currentVFlip)
 
         # create pixmap image
         pixmapImage = self.pixmap.toImage()
@@ -400,8 +404,63 @@ class ChunksetPanel(qtw.QGraphicsView):
         self.pixmap = qtg.QPixmap.fromImage(pixmapImage)
         self.pixmapItem.setPixmap(self.pixmap)
     
-    def ResetImage(self):
+    def ResetImage(self): #TODO
         """ Redraw the image. """
+        # create blank image
+        width = self.pixmap.width()
+        height = self.pixmap.height()
+        image = qtg.QImage(width, height, qtg.QImage.Format.Format_ARGB32)
+
+        # grab palette/tileset/chunkset data
+        palettes = self.mainApplication.projectData.palettes
+        tileset = self.mainApplication.projectData.tileset.set
+        chunkset = self.mainApplication.projectData.chunkset.set
+        chunksPerRow = self.pixmap.width() // (self.chunkSize * 8)
+
+        # convert palettes to 32bit ARGB (Alpha, Red, Green, Blue)
+        npPalettes = [numpy.array([
+            # 1st color in palette is transparent
+            ((0x00 if i == 0 else 0xFF) << 24) | (c.red << 16) | (c.green << 8) | c.blue
+            for i, c in enumerate(pal.palette)
+        ], dtype=numpy.uint32) for pal in palettes]
+
+        # access raw image buffer
+        pointer = image.bits()
+        pointer.setsize(width * height * 4)
+        imageArray = numpy.ndarray((height, width), dtype=numpy.uint32, buffer=pointer)
+
+        for chunkIndex, chunk in enumerate(chunkset):
+            # convert chunk index into x, y
+            chunkX, chunkY = (chunkIndex % chunksPerRow) * self.chunkSize * 8, (chunkIndex // chunksPerRow) * self.chunkSize * 8
+
+            # loop for every tile in chunk
+            for yWithinChunk in range(self.chunkSize):
+                for xWithinChunk in range(self.chunkSize):
+                    # tile object
+                    tileObject = chunk[yWithinChunk][xWithinChunk]
+
+                    # get the tile data
+                    tileArray = tileset[tileObject.id]
+
+                    # apply flips
+                    if tileObject.hFlip:
+                        for y in range(8):
+                            tileArray[yWithinChunk] = tileArray[y][::-1]
+                    if tileObject.vFlip:
+                        tileArray = tileArray[::-1]
+
+                    # draw the tile
+                    for yWithinTile in range(8):
+                        for xWithinTile in range(8):
+                            # get the pixel's coords
+                            pixelX, pixelY = chunkX + (xWithinChunk * 8) + xWithinTile, chunkY + (yWithinChunk * 8) + yWithinTile
+
+                            # set pixel colors
+                            imageArray[pixelY, pixelX] = npPalettes[tileObject.palette][tileArray[yWithinTile][xWithinTile]]
+        
+        # convert image to pixmap and apply
+        self.pixmap = qtg.QPixmap.fromImage(image)
+        self.pixmapItem.setPixmap(self.pixmap)
 
 class ChunksetEditor(qtw.QWidget):
     """ Editor menu allowing you to edit the project's tileset. """
