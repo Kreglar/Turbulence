@@ -129,6 +129,75 @@ class TilePicker(qtw.QGraphicsView):
         self.img = qtg.QPixmap.fromImage(self.image)
         self.pixmapItem.setPixmap(self.img)
 
+class PalettePicker(qtw.QLabel):
+    """ To select working palette."""
+    # signal to share palette
+    paletteSelected = qtc.pyqtSignal(int)
+
+    def __init__(self, scale: int, mainApplication: object):
+        super().__init__()
+
+        # define globals
+        self.scale = scale
+        self.mainApplication = mainApplication
+
+        # define the palette choice img
+        self.img = qtg.QPixmap(16 * scale, 4 * scale)
+        self.img.fill(qtg.QColor(0, 0, 0)) # fill with black
+
+        # create selection overlay
+        self.overlay = qtg.QPixmap(16 * scale, 4 * scale)
+        self.overlay.fill(qtg.QColor(0, 0, 0, 0)) # fill tranasparent
+        self.DrawSelect(0)
+
+        # fix the size
+        self.setFixedSize(self.img.size())
+    
+    def mousePressEvent(self, event):
+        """ Get color at click event. """
+        # get the click position
+        y = event.position().toPoint().y()
+
+        # select
+        self.DrawSelect((y // self.scale) * self.scale)
+        self.update()
+
+        # emit color signal
+        self.paletteSelected.emit(y // self.scale)
+
+    def DrawSelect(self, pos: int):
+        """ Draw the selection rectangles. """
+        self.overlay.fill(qtg.QColor(0, 0, 0, 0)) # fill tranasparent
+        painter = qtg.QPainter(self.overlay)
+        painter.setPen(qtg.QPen(qtg.QColor(255, 0, 0), 5)) # color, width
+        painter.drawRect(qtc.QRect(0, pos, self.scale * 16, self.scale)) # draw for palette
+        painter.end()
+    
+    def paintEvent(self, event):
+        """ Merge the two pixmaps. """
+        painter = qtg.QPainter(self)
+        painter.drawPixmap(0, 0, self.img)
+        painter.drawPixmap(0, 0, self.overlay)
+        painter.end()
+    
+    def ResetImage(self):
+        """ Reset the colors for the color picker image. """
+        # define painter
+        painter = qtg.QPainter(self.img)
+
+        self.img.fill(qtg.QColor(0, 0, 0))
+
+        # repeat for every palette
+        for y, pal in enumerate(self.mainApplication.projectData.palettes):
+            # repeat for every color
+            for x, col in enumerate(pal.palette):
+                painter.setBrush(qtg.QBrush(qtg.QColor(col.red, col.green, col.blue)))
+                painter.drawRect(x * self.scale, y * self.scale, self.scale, self.scale)
+        
+        # finish
+        painter.end()
+        self.update()
+
 class TilePanel(qtw.QWidget):
     """ Panel to select tile and tile properties. """
     # signal to share new properties
@@ -137,12 +206,17 @@ class TilePanel(qtw.QWidget):
     def __init__(self, mainApplication: object):
         super().__init__()
 
+        # define current palette
+        self.currentPalette = 0
+
         # set the tile picker
         self.picker = TilePicker(64, mainApplication)
 
+        # set the palette picker
+        self.palPicker = PalettePicker(15, mainApplication)
+
         # define the attribute buttons
         self.priorityButton = qtw.QPushButton("Priority", self)
-        self.paletteButton = qtw.QPushButton("Palette", self)
         self.hFlipButton = qtw.QPushButton("Horizontal Flip", self)
         self.vFlipButton = qtw.QPushButton("Vertical Flip", self)
 
@@ -169,7 +243,7 @@ class TilePanel(qtw.QWidget):
         attributeLayout = qtw.QVBoxLayout()
         attributeLayout.addWidget(qtw.QLabel("\tTile Attributes"))
         attributeLayout.addWidget(self.priorityButton)
-        attributeLayout.addWidget(self.paletteButton)
+        attributeLayout.addWidget(self.palPicker)
         attributeLayout.addWidget(self.hFlipButton)
         attributeLayout.addWidget(self.vFlipButton)
         attributeLayout.addStretch()
@@ -183,7 +257,13 @@ class TilePanel(qtw.QWidget):
         self.setFixedWidth(340)
 
         # link choosing items to setting properties
+        self.palPicker.paletteSelected.connect(self.PaletteChange)
         self.itemsSelected.connect(self.picker.SetProperties)
+    
+    def PaletteChange(self, pal: int):
+        """ Palette is changed. """
+        self.currentPalette = pal # change palette
+        self.EmitAttributes() # emit
     
     def PriorityButtonPressed(self):
         """ Priority button is toggled. """
@@ -232,7 +312,7 @@ class TilePanel(qtw.QWidget):
     
     def EmitAttributes(self):
         """ Emit all the attributes of the tile selection. """
-        self.itemsSelected.emit(self.priorityButton.isChecked(), 0, self.hFlipButton.isChecked(), self.vFlipButton.isChecked())
+        self.itemsSelected.emit(self.priorityButton.isChecked(), self.currentPalette, self.hFlipButton.isChecked(), self.vFlipButton.isChecked())
 
 class ChunksetPanel(qtw.QGraphicsView):
     """ Panel allowing you to edit chunksets. """
@@ -404,7 +484,7 @@ class ChunksetPanel(qtw.QGraphicsView):
         self.pixmap = qtg.QPixmap.fromImage(pixmapImage)
         self.pixmapItem.setPixmap(self.pixmap)
     
-    def ResetImage(self): #TODO
+    def ResetImage(self):
         """ Redraw the image. """
         # create blank image
         width = self.pixmap.width()

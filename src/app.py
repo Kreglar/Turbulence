@@ -55,6 +55,7 @@ class Application(qtw.QMainWindow):
             pv.paletteChange.connect(tileEdit.tilesetPanel.ResetImage)
             # - chunkset editor
             pv.paletteChange.connect(chunkEdit.tilePanel.picker.ResetImage)
+            pv.paletteChange.connect(chunkEdit.tilePanel.palPicker.ResetImage)
             pv.paletteChange.connect(chunkEdit.chunksetPanel.ResetImage)
         # - change in tile
         # -- chunkset editor
