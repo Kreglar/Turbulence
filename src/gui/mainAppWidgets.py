@@ -3,9 +3,6 @@ from PyQt6 import QtWidgets as qtw, QtGui as qtg, QtCore as qtc
 
 class MenuBar(qtw.QMenuBar):
     """ Menubar gui object. """
-    # signal for selected option
-    selectedOption = qtc.pyqtSignal(list)
-
     def __init__(self, mainApplication: qtw.QMainWindow):
         super().__init__(mainApplication)
 
@@ -28,7 +25,7 @@ class MenuBar(qtw.QMenuBar):
                 "Import": ["Palette", "Tileset", "Chunkset", "Tilemap"]
                 },
                 {
-                "Export": ["All", "Palette", "Tileset", "Chunkset", "Tilemap"]
+                "Export": ["Palette", "Tileset", "Chunkset", "Tilemap"]
                 },
                 None,
                 "Quit"
@@ -47,11 +44,20 @@ class MenuBar(qtw.QMenuBar):
                         subMenu = menu.addMenu(subMenuName) # create the submenu
                         for subOption in option[subMenuName]: # loop over every item in the submenu
                             action = qtg.QAction(subOption, self)
-                            action.triggered.connect(lambda connect, s=[menuName, subMenuName, subOption]: self.selectedOption.emit(s))
+                            action.triggered.connect(lambda connect, s=[menuName, subMenuName, subOption]: self.ButtonFunc(s))
                             subMenu.addAction(action)
                     else: # the item is not a submenu
                         action = qtg.QAction(option, self)
-                        action.triggered.connect(lambda connect, s=[menuName, option]: self.selectedOption.emit(s))
+                        action.triggered.connect(lambda connect, s=[menuName, option]: self.ButtonFunc(s))
                         menu.addAction(action)
                 else: # the option is None (separator)
                     menu.addSeparator()
+    
+    def ButtonFunc(self, button: list):
+        """ What to do when a menu button is pressed. """
+        if button == ["File", "Open"]: # opening a file
+            self.mainApplication.LoadProjectFile()
+        elif button == ["File", "Save"]: # saving a file
+            self.mainApplication.SaveProjectFile()
+        elif button == ["File", "Save As"]: # saving anew file
+            self.mainApplication.SaveNewProjectFile()

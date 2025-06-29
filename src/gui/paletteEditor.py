@@ -130,6 +130,21 @@ class PaletteVisual(qtw.QLabel):
         painter = qtg.QPainter(self)
         painter.drawPixmap(0, 0, self.img)
         painter.end()
+    
+    def ResetImage(self):
+        """ Resets the image. """
+        # init painter
+        painter = qtg.QPainter(self.img)
+
+        # draw each color
+        for x, col in enumerate(self.mainApplication.projectData.palettes[self.paletteNum].palette):
+            painter.setBrush(qtg.QBrush(qtg.QColor(col.red, col.green, col.blue)))
+            painter.drawRect(x * self.scale, 0, self.scale, self.scale)
+        
+        # end
+        painter.end()
+        self.update()
+        
 
 class PalettePanel(qtw.QWidget):
     """ Palette editor palette view/edit. """

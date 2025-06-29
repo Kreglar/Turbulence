@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 
+# gui
+from PyQt6 import QtWidgets as qtw
+
 # various data types used in this project
 from . import data
 
@@ -22,5 +25,11 @@ def NewProjectFile() -> ProjectData:
     projectFile = ProjectData(palettes, tileset, chunkset, tilemap)
     return projectFile
 
-def LoadProjectFile(mainApplication: object, projectFile: bytearray) -> None: # TODO
+def LoadProjectFile(mainApplication: object, projectFile: dict) -> None: # TODO
     """ Load a project file into the editor. """
+
+def ImportFile():
+    pass
+
+def ExportFile():
+    pass

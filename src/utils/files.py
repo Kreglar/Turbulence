@@ -7,19 +7,19 @@ import json
 # use custom data formats
 from . import data
 
-def ReadSettings(settingsPath: str="settings.json") -> dict:
+def ReadJson(jsonPath: str) -> dict:
     """ Return application settings in json format. """
-    # read json settings file
-    with open(settingsPath, 'r') as file:
-        applicationSettings = json.load(file)
+    # read json file
+    with open(jsonPath, 'r') as file:
+        jsonData = json.load(file)
 
-    return applicationSettings
+    return jsonData
 
-def WriteSettings(applicationSettings: dict, settingsPath: str="settings.json") -> None:
+def WriteJson(jsonData: dict, jsonPath: str) -> None:
     """ Write application settings in json settings file. """
     # write to json
-    with open(settingsPath, 'w') as file:
-        json.dump(applicationSettings, file, indent=4)
+    with open(jsonPath, 'w') as file:
+        json.dump(jsonData, file, indent=4)
 
 def ExtractBytes(filepath: str) -> bytearray:
     """ Opens and extracts bytes from file. """
