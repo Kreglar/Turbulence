@@ -433,8 +433,8 @@ class ChunksetPanel(qtw.QGraphicsView):
         """ Draw tiles at event location. """
         # get the coords within the pixmap
         coords = (
-            (math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).x()) // 8) * 8,
-            (math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).y()) // 8) * 8
+            math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).x()),
+            math.floor(self.pixmapItem.mapFromScene(self.mapToScene(event.position().toPoint())).y())
         )
 
         # check if out of range
@@ -450,7 +450,7 @@ class ChunksetPanel(qtw.QGraphicsView):
             return
         
         # get the tile data
-        tileArray = self.mainApplication.projectData.tileset.set[self.currentTileIndex]
+        tileArray = self.mainApplication.projectData.tileset.set[self.currentTileIndex][:]
 
         # get the palette
         palette = self.mainApplication.projectData.palettes[self.currentPaletteIndex].palette
@@ -462,12 +462,12 @@ class ChunksetPanel(qtw.QGraphicsView):
         if self.currentVFlip:
             tileArray = tileArray[::-1]
 
-        # get coords withing chunk
-        withinX = coords[0] % self.chunkSize
-        withinY = coords[1] % self.chunkSize
+        # get coords within chunk
+        withinX = (coords[0] // 8) % self.chunkSize
+        withinY = (coords[1] // 8) % self.chunkSize
 
         # apply to chunk in chunkset
-        self.mainApplication.projectData.chunkset.set[chunkIndex][withinX][withinY] = data.Tile(self.currentPaletteIndex, self.currentTileIndex, self.currentPriority, self.currentHFlip, self.currentVFlip)
+        self.mainApplication.projectData.chunkset.set[chunkIndex][withinY][withinX] = data.Tile(self.currentPaletteIndex, self.currentTileIndex, self.currentPriority, self.currentHFlip, self.currentVFlip)
 
         # create pixmap image
         pixmapImage = self.pixmap.toImage()
@@ -478,7 +478,7 @@ class ChunksetPanel(qtw.QGraphicsView):
                 # get the color's index
                 colorIndex = tileArray[y][x]
                 # set pixel colors
-                pixmapImage.setPixelColor(coords[0] + x, coords[1] + y, qtg.QColor(palette[colorIndex].red, palette[colorIndex].green, palette[colorIndex].blue, 0 if colorIndex == 0 else 255))
+                pixmapImage.setPixelColor(((coords[0] // 8) * 8) + x, ((coords[1] // 8) * 8) + y, qtg.QColor(palette[colorIndex].red, palette[colorIndex].green, palette[colorIndex].blue, 0 if colorIndex == 0 else 255))
 
         # convert back to pixmap and update pixmap item
         self.pixmap = qtg.QPixmap.fromImage(pixmapImage)

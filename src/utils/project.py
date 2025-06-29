@@ -16,7 +16,7 @@ def NewProjectFile() -> ProjectData:
     palettes = [data.Palette() for i in range(4)]
     tileset = data.Tileset(1600) # 1600 unique tiles
     chunkset = data.Chunkset(400, 4) # 400 unique chunks, 4x4 tiles per chunk
-    tilemap = data.Tilemap((64, 16)) # 64x16 chunk tilemap
+    tilemap = data.Tilemap((64, 32)) # 64x32 chunk tilemap
 
     # create project dataclass
     projectFile = ProjectData(palettes, tileset, chunkset, tilemap)

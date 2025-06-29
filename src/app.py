@@ -50,14 +50,23 @@ class Application(qtw.QMainWindow):
         # link signals
         # - change in palette
         for pv in palEdit.palettePanel.visuals:
-            # - tileset editor
+            # -- tileset editor
             pv.paletteChange.connect(tileEdit.colorPanel.picker.ResetImage)
             pv.paletteChange.connect(tileEdit.tilesetPanel.ResetImage)
-            # - chunkset editor
+            # -- chunkset editor
             pv.paletteChange.connect(chunkEdit.tilePanel.picker.ResetImage)
             pv.paletteChange.connect(chunkEdit.tilePanel.palPicker.ResetImage)
             pv.paletteChange.connect(chunkEdit.chunksetPanel.ResetImage)
+            # -- tilemap editor
+            pv.paletteChange.connect(mapEdit.chunkPanel.picker.ResetImage)
+            pv.paletteChange.connect(mapEdit.tilemapPanel.ResetImage)
         # - change in tile
         # -- chunkset editor
         tileEdit.tilesetPanel.tileChange.connect(chunkEdit.tilePanel.picker.ResetImage)
         tileEdit.tilesetPanel.tileChange.connect(chunkEdit.chunksetPanel.ResetImage)
+        # -- tilemap editor
+        tileEdit.tilesetPanel.tileChange.connect(mapEdit.chunkPanel.picker.ResetImage)
+        tileEdit.tilesetPanel.tileChange.connect(mapEdit.tilemapPanel.ResetImage)
+        # - change in chunk
+        chunkEdit.chunksetPanel.chunkChange.connect(mapEdit.chunkPanel.picker.ResetImage)
+        chunkEdit.chunksetPanel.chunkChange.connect(mapEdit.tilemapPanel.ResetImage)
