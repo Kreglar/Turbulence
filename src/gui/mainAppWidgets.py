@@ -57,11 +57,15 @@ class MenuBar(qtw.QMenuBar):
         """ What to do when a menu button is pressed. """
         if button == ["File", "Open"]: # opening a file
             self.mainApplication.LoadProjectFile()
+
         elif button == ["File", "Save"]: # saving a file
             self.mainApplication.SaveProjectFile()
+
         elif button == ["File", "Save As"]: # saving anew file
             self.mainApplication.SaveNewProjectFile()
+        
         elif button[0:2] == ["File", "Import"]:
             self.mainApplication.ImportFile(button[2])
+        
         elif button[0:2] == ["File", "Export"]:
             pass

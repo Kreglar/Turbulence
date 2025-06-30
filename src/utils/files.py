@@ -134,13 +134,16 @@ def ExtractPalettesBin(bin: bytearray) -> list[data.Palette]:
 
 def ExtractTilesetBin(bin: bytearray) -> data.Tileset:
     """ Extract tileset data from binary byte list. """
+
+    # split bin into hex digits
+    binary = [int(f"{hex(bin[i // 2]).replace("0x", ""):0>2}"[i % 2]) for i in range(len(bin) * 2)]
     
     # split into tiles
-    genesisTiles = [bin[i:i+32] for i in range(0, len(bin), 32)]
+    genesisTiles = [binary[i:i+64] for i in range(0, len(bin), 64)]
 
     # split tiles into 2d arrays
-    #                                        get each row of a tile ----------------------- for every row ---- for every tile    
-    return data.Tileset(len(genesisTiles), [[[tile[(y * 4) + x] for x in range(4)] for y in range(8)] for tile in genesisTiles])
+    #                                        get each row of a tile -------------- for every row ---- for every tile    
+    return data.Tileset(len(genesisTiles), [[[tile[(y * 8) + x] for x in range(8)] for y in range(8)] for tile in genesisTiles])
 
 def ExtractChunksetBin(bin: bytearray, chunkSize: int) -> data.Chunkset:
     """ Extract chunkset data from binary byte list. """
