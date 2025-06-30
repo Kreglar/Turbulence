@@ -139,7 +139,7 @@ def ExtractTilesetBin(bin: bytearray) -> data.Tileset:
     binary = [int(f"{hex(bin[i // 2]).replace("0x", ""):0>2}"[i % 2]) for i in range(len(bin) * 2)]
     
     # split into tiles
-    genesisTiles = [binary[i:i+64] for i in range(0, len(bin), 64)]
+    genesisTiles = [binary[i:i+64] for i in range(0, len(binary), 64)]
 
     # split tiles into 2d arrays
     #                                        get each row of a tile -------------- for every row ---- for every tile    

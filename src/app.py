@@ -134,13 +134,51 @@ class Application(qtw.QMainWindow):
         # read the file as json
         jsonData = files.ReadJson(self.filename)
 
-        # redefine all
-        self.RedefinePalettes(jsonData)
-        self.RedefineTileset(jsonData)
-        self.RedefineChunkset(jsonData)
-        self.RedefineTilemap(jsonData)
+        # redefine palettes with json data
+        self.projectData.palettes = [
+            data.Palette(
+                [data.Color(col[0], col[1], col[2]) for col in jsonData["palettes"][palIndex]]
+            ) for palIndex in range(4)
+        ]
+        
+        # redefine tileset with json data
+        self.projectData.tileset = data.Tileset(jsonData["tileset"]["size"], jsonData["tileset"]["set"])
+        
+        # redefine chunkset with json data
+        self.projectData.chunkset = data.Chunkset(
+            jsonData["chunkset"]["size"],
+            jsonData["chunkset"]["chunkSize"],
 
-        # reset the gui
+            [
+                [
+                    [
+                        data.Tile(
+                            tile[0], # palette index
+                            tile[1], # tile id
+                            tile[2], # tile priority
+                            tile[3], # tile horizontal flip
+                            tile[4] # tile vertical flip
+                        ) for tile in row
+                    ] for row in chunk
+                ] for chunk in jsonData["chunkset"]["set"]
+            ]
+        )
+        
+        # redefine tilemap with json data
+        self.projectData.tilemap = data.Tilemap(
+            jsonData["tilemap"]["size"],
+
+            [
+                [
+                    data.Chunk(
+                        chunk[0], # chunk id
+                        chunk[1], # chunk horizontal flip
+                        chunk[2] # chunk vertical flip
+                    ) for chunk in row
+                ] for row in jsonData["tilemap"]["map"]
+            ]
+        )
+
         self.ResetMainGui()
     
     def ImportFile(self, type: str):
@@ -249,19 +287,3 @@ class Application(qtw.QMainWindow):
 
     def ExportFile(self, type: str):
         pass
-
-    def RedefinePalettes(self, palettesJson: dict):
-        """ Set the palettes to the json data. """
-        self.projectData.palettes = [data.Palette([data.Color(col[0], col[1], col[2]) for col in palettesJson["palettes"][palIndex]]) for palIndex in range(4)]
-    
-    def RedefineTileset(self, tilesetJson: dict):
-        """ Set the tileset to the json data. """
-        self.projectData.tileset = data.Tileset(tilesetJson["tileset"]["size"], tilesetJson["tileset"]["set"])
-    
-    def RedefineChunkset(self, chunksetJson: dict):
-        """ Set the chunkset to the json data. """
-        self.projectData.chunkset = data.Chunkset(chunksetJson["chunkset"]["size"], chunksetJson["chunkset"]["chunkSize"], [[[data.Tile(chunksetJson["chunkset"]["set"][i][y][x][0], chunksetJson["chunkset"]["set"][i][y][x][1], chunksetJson["chunkset"]["set"][i][y][x][2], chunksetJson["chunkset"]["set"][i][y][x][3], chunksetJson["chunkset"]["set"][i][y][x][4]) for x in range(chunksetJson["chunkset"]["chunkSize"])] for y in range(chunksetJson["chunkset"]["chunkSize"])] for i in range(chunksetJson["chunkset"]["size"])])
-    
-    def RedefineTilemap(self, tilemapJson: dict):
-        """ Set the tilemap to the json data. """
-        self.projectData.tilemap = data.Tilemap(tilemapJson["tilemap"]["size"], [[data.Chunk(tilemapJson["tilemap"]["map"][y][x][0], tilemapJson["tilemap"]["map"][y][x][1], tilemapJson["tilemap"]["map"][y][x][2]) for x in range(tilemapJson["tilemap"]["size"][0])] for y in range(tilemapJson["tilemap"]["size"][1])])
