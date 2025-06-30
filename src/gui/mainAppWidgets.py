@@ -61,3 +61,7 @@ class MenuBar(qtw.QMenuBar):
             self.mainApplication.SaveProjectFile()
         elif button == ["File", "Save As"]: # saving anew file
             self.mainApplication.SaveNewProjectFile()
+        elif button[0:2] == ["File", "Import"]:
+            self.mainApplication.ImportFile(button[2])
+        elif button[0:2] == ["File", "Export"]:
+            pass

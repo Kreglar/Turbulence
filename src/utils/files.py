@@ -140,7 +140,7 @@ def ExtractTilesetBin(bin: bytearray) -> data.Tileset:
 
     # split tiles into 2d arrays
     #                                        get each row of a tile ----------------------- for every row ---- for every tile    
-    return data.Tileset(len(genesisTiles), [[sum([tile[(y * 4) + x] for x in range(4)], []) for y in range(8)] for tile in genesisTiles])
+    return data.Tileset(len(genesisTiles), [[[tile[(y * 4) + x] for x in range(4)] for y in range(8)] for tile in genesisTiles])
 
 def ExtractChunksetBin(bin: bytearray, chunkSize: int) -> data.Chunkset:
     """ Extract chunkset data from binary byte list. """

@@ -1,6 +1,9 @@
 # gui
 from PyQt6 import QtWidgets as qtw
 
+# to extract file extensions
+import pathlib
+
 # custom utilities
 from utils import data
 from utils import files
@@ -139,6 +142,113 @@ class Application(qtw.QMainWindow):
 
         # reset the gui
         self.ResetMainGui()
+    
+    def ImportFile(self, type: str):
+        """ Import data into the project. """
+        # get type of import
+        if type == "Palette":
+            # create file dialog
+            dialog = qtw.QFileDialog(self)
+            dialog.setFileMode(qtw.QFileDialog.FileMode.ExistingFiles)
+            dialog.setNameFilter("All Files (*.*);;Image files (*.png, *.bmp, *.jpg);;Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
+            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
+
+            # if a file is not chosen
+            if not (dialog.exec() and dialog.selectedFiles()):
+                return
+            
+            # get where you want to import palette
+            importLocation, okPressed = qtw.QInputDialog.getInt(self, "Get Location", "Which palette would you like to import to?", 0, 0, 3, 1)
+            if not okPressed:
+                return
+            
+            file = dialog.selectedFiles()[0] # we only want the first file
+
+            # compare file extension
+            ext = pathlib.Path(file).suffix
+            if ext == ".png" or ext == ".bmp" or ext == ".jpg":
+                self.projectData.palettes[importLocation] = files.ExtractPaletteImg(file)
+            elif ext == ".asm" or ext == ".s":
+                self.projectData.palettes[importLocation] = files.ExtractPalettesBin(files.ExtractBinDataAsm(file))[0]
+            elif ext == ".bin":
+                self.projectData.palettes[importLocation] = files.ExtractPalettesBin(file)[0]
+
+            # reset gui
+            self.ResetMainGui()
+
+        elif type == "Tileset":
+            # create file dialog
+            dialog = qtw.QFileDialog(self)
+            dialog.setFileMode(qtw.QFileDialog.FileMode.ExistingFiles)
+            dialog.setNameFilter("All Files (*.*);;Image files (*.png, *.bmp, *.jpg);;Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
+            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
+
+            # if a file is not chosen
+            if not (dialog.exec() and dialog.selectedFiles()):
+                return
+            
+            file = dialog.selectedFiles()[0] # we only want the first file
+
+            # compare file extension
+            ext = pathlib.Path(file).suffix
+            if ext == ".png" or ext == ".bmp" or ext == ".jpg":
+                self.projectData.tileset = files.ExtractTilesetImg(file)
+            elif ext == ".asm" or ext == ".s":
+                self.projectData.tileset = files.ExtractTilesetBin(files.ExtractBinDataAsm(file))
+            elif ext == ".bin":
+                self.projectData.tileset = files.ExtractTilesetBin(file)
+
+            # reset gui
+            self.ResetMainGui()
+
+        elif type == "Chunkset":
+            # create file dialog
+            dialog = qtw.QFileDialog(self)
+            dialog.setFileMode(qtw.QFileDialog.FileMode.ExistingFiles)
+            dialog.setNameFilter("All Files (*.*);;Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
+            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
+
+            # if a file is not chosen
+            if not (dialog.exec() and dialog.selectedFiles()):
+                return
+            
+            file = dialog.selectedFiles()[0] # we only want the first file
+
+            # compare file extension
+            ext = pathlib.Path(file).suffix
+            if ext == ".asm" or ext == ".s":
+                self.projectData.tileset = files.ExtractChunksetBin(files.ExtractBinDataAsm(file))
+            elif ext == ".bin":
+                self.projectData.tileset = files.ExtractChunksetBin(file)
+
+            # reset gui
+            self.ResetMainGui()
+
+        elif type == "Tilemap":
+            # create file dialog
+            dialog = qtw.QFileDialog(self)
+            dialog.setFileMode(qtw.QFileDialog.FileMode.ExistingFiles)
+            dialog.setNameFilter("All Files (*.*);;Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
+            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
+
+            # if a file is not chosen
+            if not (dialog.exec() and dialog.selectedFiles()):
+                return
+            
+            file = dialog.selectedFiles()[0] # we only want the first file
+
+            # compare file extension
+            ext = pathlib.Path(file).suffix
+            if ext == ".asm" or ext == ".s":
+                self.projectData.tileset = files.ExtractTilemapBin(files.ExtractBinDataAsm(file))
+            elif ext == ".bin":
+                self.projectData.tileset = files.ExtractTilemapBin(file)
+
+            # reset gui
+            self.ResetMainGui()
+
+    def ExportFile(self, type: str):
+        pass
 
     def RedefinePalettes(self, palettesJson: dict):
         """ Set the palettes to the json data. """
