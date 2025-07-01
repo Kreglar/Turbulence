@@ -68,4 +68,4 @@ class MenuBar(qtw.QMenuBar):
             self.mainApplication.ImportFile(button[2])
         
         elif button[0:2] == ["File", "Export"]:
-            pass
+            self.mainApplication.ExportFile(button[2])
