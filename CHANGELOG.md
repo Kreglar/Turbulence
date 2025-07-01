@@ -2,4 +2,11 @@
 
 All notable changes to this project will be recorded here.
 
-## [0.0.0] - 6/23/25 - Unreleased
+## [1.0.0] - 7/1/25 - Release
+
+- palettes, tilesets, chunksets, and tilemaps
+    - create
+    - edit
+    - import
+    - export
+- save/load project file

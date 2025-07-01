@@ -104,6 +104,9 @@ class Application(qtw.QMainWindow):
         
         self.filename = dialog.selectedFiles()[0] # we only want the first file
 
+        # save the file
+        self.SaveProjectFile()
+
     def SaveProjectFile(self):
         """ Save the project as a file. """
         # if the file doesn't exsist
@@ -112,7 +115,35 @@ class Application(qtw.QMainWindow):
             return
 
         # convert the project data to json
-        jsonData = {"palettes": [[(col.red, col.green, col.blue) for col in pal.palette] for pal in self.projectData.palettes], "tileset": {"size": self.projectData.tileset.size, "set": self.projectData.tileset.set}, "chunkset": {"size": self.projectData.chunkset.size,"chunkSize": self.projectData.chunkset.chunkSize, "set": [[[(tile.palette, tile.id, tile.priority, tile.hFlip, tile.vFlip) for tile in row] for row in chunk] for chunk in self.projectData.chunkset.set]}, "tilemap": {"size": self.projectData.tilemap.size, "map": [[(chunk.id, chunk.hFlip, chunk.vFlip) for chunk in row] for row in self.projectData.tilemap.map]}}
+        jsonData = {
+            "palettes": [
+                [(col.red, col.green, col.blue) for col in pal.palette] for pal in self.projectData.palettes
+            ],
+
+            "tileset": {
+                "size": self.projectData.tileset.size,
+                "set": self.projectData.tileset.set
+            },
+
+            "chunkset": {
+                "size": self.projectData.chunkset.size,
+                "chunkSize": self.projectData.chunkset.chunkSize,
+                "set": [
+                    [
+                        [(tile.palette, tile.id, tile.priority, tile.hFlip, tile.vFlip) for tile in row] for row in chunk
+                    ] for chunk in self.projectData.chunkset.set
+                ]
+            },
+
+            "tilemap": {
+                "size": self.projectData.tilemap.size,
+                "map": [
+                    [
+                        (chunk.id, chunk.hFlip, chunk.vFlip) for chunk in row
+                    ] for row in self.projectData.tilemap.map
+                ]
+            }
+        }
 
         # write the json
         files.WriteJson(jsonData, self.filename)
@@ -209,7 +240,7 @@ class Application(qtw.QMainWindow):
             elif ext == ".asm" or ext == ".s":
                 self.projectData.palettes[importLocation] = files.ExtractPalettesBin(files.ExtractBinDataAsm(file))[0]
             elif ext == ".bin":
-                self.projectData.palettes[importLocation] = files.ExtractPalettesBin(file)[0]
+                self.projectData.palettes[importLocation] = files.ExtractPalettesBin(files.ExtractBytes(file))[0]
 
             # reset gui
             self.ResetMainGui()
@@ -234,7 +265,7 @@ class Application(qtw.QMainWindow):
             elif ext == ".asm" or ext == ".s":
                 self.projectData.tileset = files.ExtractTilesetBin(files.ExtractBinDataAsm(file))
             elif ext == ".bin":
-                self.projectData.tileset = files.ExtractTilesetBin(file)
+                self.projectData.tileset = files.ExtractTilesetBin(files.ExtractBytes(file))
 
             # reset gui
             self.ResetMainGui()
@@ -257,7 +288,7 @@ class Application(qtw.QMainWindow):
             if ext == ".asm" or ext == ".s":
                 self.projectData.tileset = files.ExtractChunksetBin(files.ExtractBinDataAsm(file))
             elif ext == ".bin":
-                self.projectData.tileset = files.ExtractChunksetBin(file)
+                self.projectData.tileset = files.ExtractChunksetBin(files.ExtractBytes(file))
 
             # reset gui
             self.ResetMainGui()
@@ -280,10 +311,94 @@ class Application(qtw.QMainWindow):
             if ext == ".asm" or ext == ".s":
                 self.projectData.tileset = files.ExtractTilemapBin(files.ExtractBinDataAsm(file))
             elif ext == ".bin":
-                self.projectData.tileset = files.ExtractTilemapBin(file)
+                self.projectData.tileset = files.ExtractTilemapBin(files.ExtractBytes(file))
 
             # reset gui
             self.ResetMainGui()
 
     def ExportFile(self, type: str):
-        pass
+        # get type of export
+        if type == "Palette":
+            # create file dialog
+            dialog = qtw.QFileDialog(self)
+            dialog.setFileMode(qtw.QFileDialog.FileMode.AnyFile)
+            dialog.setNameFilter("Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
+            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
+
+            # if a file is not chosen
+            if not (dialog.exec() and dialog.selectedFiles()):
+                return
+            
+            file = dialog.selectedFiles()[0] # we only want the first file
+
+            # compare file extension
+            ext = pathlib.Path(file).suffix
+            if ext == ".asm" or ext == ".s":
+                with open(file, "w") as f:
+                    f.write(files.ExportPaletteAsm(self.projectData.palettes))
+            elif ext == ".bin":
+                pass
+
+        elif type == "Tileset":
+            # create file dialog
+            dialog = qtw.QFileDialog(self)
+            dialog.setFileMode(qtw.QFileDialog.FileMode.AnyFile)
+            dialog.setNameFilter("Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
+            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
+
+            # if a file is not chosen
+            if not (dialog.exec() and dialog.selectedFiles()):
+                return
+            
+            file = dialog.selectedFiles()[0] # we only want the first file
+
+            # compare file extension
+            ext = pathlib.Path(file).suffix
+            if ext == ".asm" or ext == ".s":
+                with open(file, "w") as f:
+                    f.write(files.ExportTilesetAsm(self.projectData.tileset))
+            elif ext == ".bin":
+                pass
+
+        elif type == "Chunkset":
+            # create file dialog
+            dialog = qtw.QFileDialog(self)
+            dialog.setFileMode(qtw.QFileDialog.FileMode.AnyFile)
+            dialog.setNameFilter("Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
+            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
+
+            # if a file is not chosen
+            if not (dialog.exec() and dialog.selectedFiles()):
+                return
+            
+            file = dialog.selectedFiles()[0] # we only want the first file
+
+            # compare file extension
+            ext = pathlib.Path(file).suffix
+            if ext == ".asm" or ext == ".s":
+                with open(file, "w") as f:
+                    f.write(files.ExportChunksetAsm(self.projectData.chunkset))
+            elif ext == ".bin":
+                pass
+
+        elif type == "Tilemap":
+            # create file dialog
+            dialog = qtw.QFileDialog(self)
+            dialog.setFileMode(qtw.QFileDialog.FileMode.AnyFile)
+            dialog.setNameFilter("Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
+            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
+
+            # if a file is not chosen
+            if not (dialog.exec() and dialog.selectedFiles()):
+                return
+            
+            file = dialog.selectedFiles()[0] # we only want the first file
+
+            # compare file extension
+            ext = pathlib.Path(file).suffix
+            if ext == ".asm" or ext == ".s":
+                with open(file, "w") as f:
+                    f.write(files.ExportTilemapAsm(self.projectData.tilemap))
+            elif ext == ".bin":
+                pass
+

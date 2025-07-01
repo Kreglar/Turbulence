@@ -44,9 +44,10 @@ For detailed instructions on how to use Turbulence, visit the [Guide Home](docs/
 
 ## Changelog
 
-Latest version: 0.0.0
+Latest version: 1.0.0
 
 Highlights of version:
+- Initial release!
 
 Refer to the [Changelog](CHANGELOG.md) for all new features, changes to old features, soon to be removed features, now removed features, and fixed bugs.
 
