@@ -41,7 +41,7 @@ For detailed instructions on how to use Turbulence, visit the [Guide Home](docs/
 
 ## Compiling From Source
 
-To compile from source, make sure you have all the dependencies installed: `pip install pyinstaller PyQt6`
+To compile from source, make sure you have all the dependencies installed: `pip install pyinstaller PyQt6 numpy`
 
 Then run the build script: `pyinstaller --onefile --noconsole src/main.py`
 
