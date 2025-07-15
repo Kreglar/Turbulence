@@ -2,23 +2,6 @@
 
 Tileset/map editor for Sega Genesis homebrew
 
-## Table of Contents
-- [License](#License)
-- [Description/Overview](#descriptionoverview)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Compiling From Source](#compiling-from-source)
-- [Changelog](#changelog)
-- [Contributing](#contributing)
-- [Code of Conduct](#code-of-conduct)
-- [Support](#support)
-- [Authors & Acknowledgements](#authors--acknowledgement)
-
-
-## License
-
-This project is licensed under the GNU GPLv3 (GNU General Public License v3.0) for more information read the [License](LICENSE.txt).
-
 
 ## Description/Overview
 
@@ -31,12 +14,9 @@ Turbulence allows you to create and edit various graphical asset files for use i
 - Tilemaps -> custom size 2D array of indexed chunks from the chunkset with certain attributes
 
 
-## Installation
-
-
 ## Usage
 
-For detailed instructions on how to use Turbulence, visit the [Guide Home](docs/guide/guideHome.md).
+For detailed instructions on how to use Turbulence, visit the [Docs Home](docs/home.md).
 
 
 ## Compiling From Source
@@ -45,22 +25,18 @@ To compile from source, make sure you have all the dependencies installed: `pip 
 
 Then run the build script: `pyinstaller --onefile --noconsole src/main.py`
 
-Finally, copy the recources directory into the dist directory.
+Finally, copy the resources directory into the dist directory.
 
 
 ## Changelog
 
-Latest version: 1.0.0
+Latest version: 1.0.1
 
 Highlights of version:
-- Initial release!
+- Fixes exporting of chunksets and tilemaps
+- Documentation and ReadMe updates
 
 Refer to the [Changelog](CHANGELOG.md) for all new features, changes to old features, soon to be removed features, now removed features, and fixed bugs.
-
-
-## Contributing
-
-For a detailed explanation about the inner workings of Turbulence visit the [Architecture Home](docs/architecture/architectureHome.md)
 
 
 ## Code of Conduct
@@ -68,7 +44,16 @@ For a detailed explanation about the inner workings of Turbulence visit the [Arc
 Please visit the [Code of Conduct](CODE_OF_CONDUCT.md) for the code of conduct.
 
 
+## License
+
+This project is licensed under the GNU GPLv3 (GNU General Public License v3.0) for more information read the [License](LICENSE.txt).
+
+
 ## Support
+
+For any questions, concerns, or comments feel free to email me at `kreglar@yahoo.com`
+
+For any issues or bugs regarding the software, consider opening a new issue.
 
 
 ## Authors & Acknowledgements

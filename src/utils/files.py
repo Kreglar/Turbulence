@@ -235,71 +235,54 @@ def ExportPaletteAsm(palettes: list[data.Palette]) -> str:
     
     return asm
 
-def ExportPaletteBin(palette: data.Palette) -> bytearray:
-    pass
-
 def ExportTilesetAsm(tileset: data.Tileset) -> str:
     """ Export tileset as assembly data. """
     # variable holding assembly file data
-    asm = ""
+    asm = "Tileset:"
     for tile in tileset.set:
-        asm += f"Tileset:"
+        # add space for next tile
+        asm += "\n"
 
         for row in tile:
             asm += "\n\tdc.l $"
             for pixel in row:
                 # add the pixel
                 asm += hex(pixel).replace("0x", "")
-            asm += "\n"
-        
-        # add space for next tile
-        asm += "\n"
     
     return asm
-
-def ExportTilesetBin(tileset: data.Tileset) -> bytearray:
-    pass
 
 def ExportChunksetAsm(chunkset: data.Chunkset) -> str:
     """ Export chunkset as assembly data. """
     # variable holding assembly file data
-    asm = ""
+    asm = "Chunkset:"
     for chunk in chunkset.set:
-        asm += f"Chunkset:"
+        # add space for next chunk
+        asm += "\n"
 
         for row in chunk:
             asm += "\n\tdc.w "
             for i, tile in enumerate(row):
                 # convert tile to number data
-                tileNum = (tile.priority << 15) & (tile.palette << 13) & (tile.hFlip << 12) & (tile.vFlip << 11) & tile.id
+                tileNum = (tile.priority << 15) + (tile.palette << 13) + (tile.hFlip << 12) + (tile.vFlip << 11) + tile.id
 
                 # add the tile
-                asm += f"${hex(tileNum).replace("0x", "")}" + (", " if i + 1 < len(row) else "\n")
-        
-        # add space for next chunk
-        asm += "\n"
+                asm += f"${hex(tileNum).replace("0x", ""):0>4}" + (", " if i + 1 < len(row) else "")
     
     return asm
-
-def ExportChunksetBin(chunkset: data.Chunkset) -> bytearray:
-    pass
 
 def ExportTilemapAsm(tilemap: data.Tilemap) -> str:
     """ Export tilemap as assembly data. """
     # variable holding assembly file data
-    asm = ""
+    asm = "Tilemap:"
     for row in tilemap.map:
-        asm += f"Tilemap:"
+        # add next row
+        asm += "\n\tdc.w "
 
         for i, chunk in enumerate(row):
-            asm += "\n\tdc.w "
             # convert tile to number data
-            chunkNum = (chunk.hFlip << 15) & (chunk.vFlip << 13) & chunk.id
+            chunkNum = (chunk.hFlip << 15) + (chunk.vFlip << 13) + chunk.id
 
             # add the tile
-            asm += f"${hex(chunkNum).replace("0x", "")}" + (", " if i + 1 < len(row) else "\n")
+            asm += f"${hex(chunkNum).replace("0x", ""):0>4}" + (", " if i + 1 < len(row) else "")
     
     return asm
-
-def ExportTilemapBin(tilemap: data.Tilemap) -> bytearray:
-    pass

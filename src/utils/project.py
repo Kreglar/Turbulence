@@ -24,12 +24,3 @@ def NewProjectFile() -> ProjectData:
     # create project dataclass
     projectFile = ProjectData(palettes, tileset, chunkset, tilemap)
     return projectFile
-
-def LoadProjectFile(mainApplication: object, projectFile: dict) -> None: # TODO
-    """ Load a project file into the editor. """
-
-def ImportFile():
-    pass
-
-def ExportFile():
-    pass
