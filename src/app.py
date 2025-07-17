@@ -281,14 +281,19 @@ class Application(qtw.QMainWindow):
             if not (dialog.exec() and dialog.selectedFiles()):
                 return
             
+            # get chunksize
+            chunkSize, okPressed = qtw.QInputDialog.getInt(self, "Get Chunk Size", "What is the side length (in tiles) of each chunk?", 4, 1, 100, 1)
+            if not okPressed:
+                return
+            
             file = dialog.selectedFiles()[0] # we only want the first file
 
             # compare file extension
             ext = pathlib.Path(file).suffix
             if ext == ".asm" or ext == ".s":
-                self.projectData.tileset = files.ExtractChunksetBin(files.ExtractBinDataAsm(file))
+                self.projectData.chunkset = files.ExtractChunksetBin(files.ExtractBinDataAsm(file), chunkSize)
             elif ext == ".bin":
-                self.projectData.tileset = files.ExtractChunksetBin(files.ExtractBytes(file))
+                self.projectData.chunkset = files.ExtractChunksetBin(files.ExtractBytes(file), chunkSize)
 
             # reset gui
             self.ResetMainGui()
@@ -304,14 +309,22 @@ class Application(qtw.QMainWindow):
             if not (dialog.exec() and dialog.selectedFiles()):
                 return
             
+            # get map size
+            mapSizeH, okPressed = qtw.QInputDialog.getInt(self, "Get Map Size", "What is the horizontal length (in chunks) of the map?", 64, 1, 1000, 1)
+            if not okPressed:
+                return
+            mapSizeV, okPressed = qtw.QInputDialog.getInt(self, "Get Map Size", "What is the vertical length (in chunks) of the map?", 32, 1, 1000, 1)
+            if not okPressed:
+                return
+            
             file = dialog.selectedFiles()[0] # we only want the first file
 
             # compare file extension
             ext = pathlib.Path(file).suffix
             if ext == ".asm" or ext == ".s":
-                self.projectData.tileset = files.ExtractTilemapBin(files.ExtractBinDataAsm(file))
+                self.projectData.tilemap = files.ExtractTilemapBin(files.ExtractBinDataAsm(file), (mapSizeH, mapSizeV))
             elif ext == ".bin":
-                self.projectData.tileset = files.ExtractTilemapBin(files.ExtractBytes(file))
+                self.projectData.tilemap = files.ExtractTilemapBin(files.ExtractBytes(file), (mapSizeH, mapSizeV))
 
             # reset gui
             self.ResetMainGui()

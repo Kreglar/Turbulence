@@ -31,14 +31,14 @@ def ExtractBytes(filepath: str) -> bytearray:
 
     return filebytes
 
-def ExtractBinDataAsm(filepath: str) -> bytearray:
+def ExtractBinDataAsm(filepath: str) -> list[int]:
     """ Extracts binary data from 68k assembly source text. """
     # read text file
     with open(filepath, "r") as file:
         # split into lines
         asm = file.read().split("\n")
     
-    binary = bytearray()
+    binary = []
 
     # parse lines
     for line in asm:
@@ -116,7 +116,7 @@ def ExtractBinDataAsm(filepath: str) -> bytearray:
                     
     return binary
 
-def ExtractPalettesBin(bin: bytearray) -> list[data.Palette]:
+def ExtractPalettesBin(bin: list[int]) -> list[data.Palette]:
     """ Extract palette data from binary byte list. """
     # split into groups of 2 bytes, colors
     genesisColors = [bin[i:i+2] for i in range(0, len(bin), 2)]
@@ -132,7 +132,7 @@ def ExtractPalettesBin(bin: bytearray) -> list[data.Palette]:
     # split into palettes and return
     return [data.Palette(RGBColors[color:color+16]) for color in range(0, len(RGBColors), 16)]
 
-def ExtractTilesetBin(bin: bytearray) -> data.Tileset:
+def ExtractTilesetBin(bin: list[int]) -> data.Tileset:
     """ Extract tileset data from binary byte list. """
 
     # split bin into hex digits
@@ -145,7 +145,7 @@ def ExtractTilesetBin(bin: bytearray) -> data.Tileset:
     #                                        get each row of a tile -------------- for every row ---- for every tile    
     return data.Tileset(len(genesisTiles), [[[tile[(y * 8) + x] for x in range(8)] for y in range(8)] for tile in genesisTiles])
 
-def ExtractChunksetBin(bin: bytearray, chunkSize: int) -> data.Chunkset:
+def ExtractChunksetBin(bin: list[int], chunkSize: int) -> data.Chunkset:
     """ Extract chunkset data from binary byte list. """
     # get the tiles/bytes per chunk
     tilesPerChunk = (chunkSize * chunkSize)
@@ -154,13 +154,13 @@ def ExtractChunksetBin(bin: bytearray, chunkSize: int) -> data.Chunkset:
     tiles = []
     for i in range(0, len(bin), 2):
         # get all tile data
-        tileData = bin[i:i+2]
+        tileData = int.from_bytes(bin[i:i+2], "big")
         priority = bool((tileData >> 15) & 0b01)
         palette = (tileData >> 13) & 0b11
         hFlip = bool((tileData >> 12) & 0b01)
         vFlip = bool((tileData >> 11) & 0b01)
         id = tileData & 0b011111111111
-        tiles.append(data.Tile(priority, palette, hFlip, vFlip, id))
+        tiles.append(data.Tile(palette, id, priority, hFlip, vFlip))
 
     # seperate tiles into chunks
     chunks = [tiles[i:i+tilesPerChunk] for i in range(0, len(tiles), tilesPerChunk)]
@@ -169,17 +169,17 @@ def ExtractChunksetBin(bin: bytearray, chunkSize: int) -> data.Chunkset:
     #                                              get row of chunk ----------------------------------- add each row to chunk ---- for every chunk
     return data.Chunkset(len(chunks), chunkSize, [[chunk[(y * chunkSize):((y * chunkSize) + chunkSize)] for y in range(chunkSize)] for chunk in chunks])
 
-def ExtractTilemapBin(bin: bytearray, size: tuple[int, int]) -> data.Tilemap:
+def ExtractTilemapBin(bin: list[int], size: tuple[int, int]) -> data.Tilemap:
     """ Extract tilemap data from binary byte list. """
     # convert into chunks
     chunks = []
     for i in range(0, len(bin), 2):
         # get all chunk data
-        chunkData = bin[i:i+2]
+        chunkData = int.from_bytes(bin[i:i+2], "big")
         hFlip = bool((chunkData >> 15) & 0b01)
         vFlip = bool((chunkData >> 15) & 0b01)
         id = chunkData & 0b0011111111111111
-        chunks.append(data.Chunk(hFlip, vFlip, id))
+        chunks.append(data.Chunk(id, hFlip, vFlip))
 
     # break into 2d array and return
     #                          get row of tilemap ---------------------------- add each row to tilemap

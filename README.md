@@ -30,11 +30,11 @@ Finally, copy the resources directory into the dist directory.
 
 ## Changelog
 
-Latest version: 1.0.1
+Latest version: 1.0.2
 
 Highlights of version:
-- Fixes exporting of chunksets and tilemaps
-- Documentation and ReadMe updates
+- Fixes importing of chunksets and tilemaps
+- added demo files for testing
 
 Refer to the [Changelog](CHANGELOG.md) for all new features, changes to old features, soon to be removed features, now removed features, and fixed bugs.
 
