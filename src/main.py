@@ -1,6 +1,6 @@
 # Turbulence
 # Made With LOVE by kreglar XOXOXOXO!!
-# Version 0.0.0 - Unreleased
+# Version 1.0.2
 
 # gui
 from PyQt6 import QtWidgets as qtw
