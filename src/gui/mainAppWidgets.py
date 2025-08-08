@@ -22,10 +22,10 @@ class MenuBar(qtw.QMenuBar):
                 "Save As",
                 None, # use None as a seperator
                 {
-                "Import": ["Palette", "Tileset", "Chunkset", "Tilemap"]
+                "Import": ["Palette", "Tileset", "Tilemap"]
                 },
                 {
-                "Export": ["Palette", "Tileset", "Chunkset", "Tilemap"]
+                "Export": ["Palette", "Tileset", "Tilemap"]
                 },
                 None,
                 "Quit"

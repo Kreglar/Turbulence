@@ -13,10 +13,10 @@ import math
 # for direct image manipulation
 import numpy
 
-class ChunkPicker(qtw.QGraphicsView):
-    """ Chunkpicker used to select chunk. """
-    # signal to share chunk
-    selectedChunk = qtc.pyqtSignal(int)
+class TilePicker(qtw.QGraphicsView):
+    """ Tilepicker used to select tile. """
+    # signal to share tile
+    tileSelected = qtc.pyqtSignal(int)
 
     def __init__(self, scale: int, mainApplication: object):
         super().__init__()
@@ -24,7 +24,8 @@ class ChunkPicker(qtw.QGraphicsView):
         # define globals
         self.imgScale = scale
         self.mainApplication = mainApplication
-        self.chunkset = mainApplication.projectData.chunkset
+        self.tileset = mainApplication.projectData.tileset
+        self.currentPaletteIndex = 0
         self.currentHFlip = False
         self.currentVFlip = False
 
@@ -33,14 +34,14 @@ class ChunkPicker(qtw.QGraphicsView):
         self.setScene(self.graphicsScene)
 
         # define the tile choice img
-        self.img = qtg.QPixmap(8 * self.chunkset.chunkSize, self.chunkset.size * 8 * self.chunkset.chunkSize)
+        self.img = qtg.QPixmap(8, self.tileset.size * 8)
         self.img.fill(qtg.QColor(0, 0, 0)) # fill with black
 
         # create the label holding the img
         self.pixmapItem = self.graphicsScene.addPixmap(self.img)
 
         # create selection overlay
-        self.overlay = qtg.QPixmap(8 * self.chunkset.chunkSize, self.chunkset.size * 8 * self.chunkset.chunkSize)
+        self.overlay = qtg.QPixmap(8, self.tileset.size * 8)
         self.overlay.fill(qtg.QColor(0, 0, 0, 0)) # fill tranasparent
         self.overlayItem = self.graphicsScene.addPixmap(self.overlay)
         self.DrawSelect(0)
@@ -58,7 +59,7 @@ class ChunkPicker(qtw.QGraphicsView):
 
         # set the scale
         self.resetTransform()
-        self.scale(self.imgScale // (8 * self.chunkset.chunkSize), self.imgScale // (8 * self.chunkset.chunkSize))
+        self.scale(self.imgScale // 8, self.imgScale // 8)
     
     def mousePressEvent(self, event):
         """ Get tile at click event. """
@@ -69,19 +70,20 @@ class ChunkPicker(qtw.QGraphicsView):
         self.DrawSelect(y)
 
         # emit color signal
-        self.selectedChunk.emit(y)
+        self.tileSelected.emit(y)
     
     def DrawSelect(self, pos: int):
         """ Draw the selection outline at pos tile. """
         self.overlay.fill(qtg.QColor(0, 0, 0, 0)) # fill tranasparent
         painter = qtg.QPainter(self.overlay)
         painter.setPen(qtg.QPen(qtg.QColor(255, 0, 0), 1)) # color, width
-        painter.drawRect(qtc.QRect(0, pos * (8 * self.chunkset.chunkSize), (8 * self.chunkset.chunkSize), (8 * self.chunkset.chunkSize))) # draw for outline
+        painter.drawRect(qtc.QRect(0, pos * 8, 8, 8)) # draw for outline
         painter.end()
         self.overlayItem.setPixmap(self.overlay) # add the new pixmap
     
-    def SetProperties(self, hFlip: bool, vFlip: bool):
+    def SetProperties(self, priority: bool, palette: int, hFlip: bool, vFlip: bool):
         """ Set the properties of what is selected. """
+        self.currentPaletteIndex = palette
         self.currentHFlip = hFlip
         self.currentVFlip = vFlip
 
@@ -94,17 +96,16 @@ class ChunkPicker(qtw.QGraphicsView):
         width = self.img.width()
         height = self.img.height()
 
-        # get data
-        palettes = self.mainApplication.projectData.palettes
-        tileset = self.mainApplication.projectData.tileset.set[:]
-        chunkset = self.mainApplication.projectData.chunkset.set[:]
+        # grab palette/tileset data
+        palette = self.mainApplication.projectData.palettes[self.currentPaletteIndex].palette
+        tileset = self.mainApplication.projectData.tileset.set
 
         # convert palette to 32bit ARGB (Alpha, Red, Green, Blue)
-        npPalettes = [numpy.array([
+        npPalette = numpy.array([
             # 1st color in palette is transparent
             ((0x00 if i == 0 else 0xFF) << 24) | (c.red << 16) | (c.green << 8) | c.blue
-            for i, c in enumerate(pal.palette)
-        ], dtype=numpy.uint32) for pal in palettes]
+            for i, c in enumerate(palette)
+        ], dtype=numpy.uint32)
 
         # access raw image buffer
         pointer = self.image.bits()
@@ -112,74 +113,137 @@ class ChunkPicker(qtw.QGraphicsView):
         imageArray = numpy.ndarray((height, width), dtype=numpy.uint32, buffer=pointer)
 
         # draw tiles into the numpy buffer
-        for i, c in enumerate(chunkset):
-            chunk = c[:] # fixes reference problems
-
+        for i, tile in enumerate(tileset):
+            y = i * 8
+            tileData = npPalette[numpy.array(tile, dtype=numpy.uint8)]
+            
             # apply flips based on flags
             if self.currentHFlip:
-                for row in range(self.chunkset.chunkSize):
-                    chunk[row] = chunk[row][::-1] # flip each row within the chunk
+                for row in range(8):
+                    tileData[row] = tileData[row][::-1] # flip each row within the tile
             if self.currentVFlip:
-                chunk = chunk[::-1] # flip the chunk data horizontally
+                tileData = tileData[::-1] # flip the tile data horizontally
 
-            # add each tile
-            for y in range(self.chunkset.chunkSize):
-                for x in range(self.chunkset.chunkSize):
-                    # get the tile as an object
-                    tileObject = chunk[y][x]
-
-                    # create 2d array for tile
-                    tile = tileset[tileObject.id]
-                    tileData = npPalettes[tileObject.palette][numpy.array(tile, dtype=numpy.uint8)]
-
-                    # apply flips based on flags
-                    if tileObject.hFlip:
-                        for row in range(8):
-                            tileData[row] = tileData[row][::-1] # flip each row within the tile
-                    if tileObject.vFlip:
-                        tileData = tileData[::-1] # flip the tile data horizontally
-
-                    tileX, tileY = x * 8, (y * 8) + (i * 8 * self.chunkset.chunkSize)
-
-                    imageArray[tileY:tileY+8, tileX:tileX+8] = tileData
+            imageArray[y:y+8, :8] = tileData
         
         self.img = qtg.QPixmap.fromImage(self.image)
         self.pixmapItem.setPixmap(self.img)
 
-class ChunkPanel(qtw.QWidget):
-    """ Panel to select chunk and chunk properties. """
+class PalettePicker(qtw.QLabel):
+    """ To select working palette."""
+    # signal to share palette
+    paletteSelected = qtc.pyqtSignal(int)
+
+    def __init__(self, scale: int, mainApplication: object):
+        super().__init__()
+
+        # define globals
+        self.scale = scale
+        self.mainApplication = mainApplication
+
+        # define the palette choice img
+        self.img = qtg.QPixmap(16 * scale, 4 * scale)
+        self.img.fill(qtg.QColor(0, 0, 0)) # fill with black
+
+        # create selection overlay
+        self.overlay = qtg.QPixmap(16 * scale, 4 * scale)
+        self.overlay.fill(qtg.QColor(0, 0, 0, 0)) # fill tranasparent
+        self.DrawSelect(0)
+
+        # fix the size
+        self.setFixedSize(self.img.size())
+    
+    def mousePressEvent(self, event):
+        """ Get color at click event. """
+        # get the click position
+        y = event.position().toPoint().y()
+
+        # select
+        self.DrawSelect((y // self.scale) * self.scale)
+        self.update()
+
+        # emit color signal
+        self.paletteSelected.emit(y // self.scale)
+
+    def DrawSelect(self, pos: int):
+        """ Draw the selection rectangles. """
+        self.overlay.fill(qtg.QColor(0, 0, 0, 0)) # fill tranasparent
+        painter = qtg.QPainter(self.overlay)
+        painter.setPen(qtg.QPen(qtg.QColor(255, 0, 0), 5)) # color, width
+        painter.drawRect(qtc.QRect(0, pos, self.scale * 16, self.scale)) # draw for palette
+        painter.end()
+    
+    def paintEvent(self, event):
+        """ Merge the two pixmaps. """
+        painter = qtg.QPainter(self)
+        painter.drawPixmap(0, 0, self.img)
+        painter.drawPixmap(0, 0, self.overlay)
+        painter.end()
+    
+    def ResetImage(self):
+        """ Reset the colors for the color picker image. """
+        # define painter
+        painter = qtg.QPainter(self.img)
+
+        self.img.fill(qtg.QColor(0, 0, 0))
+
+        # repeat for every palette
+        for y, pal in enumerate(self.mainApplication.projectData.palettes):
+            # repeat for every color
+            for x, col in enumerate(pal.palette):
+                painter.setBrush(qtg.QBrush(qtg.QColor(col.red, col.green, col.blue)))
+                painter.drawRect(x * self.scale, y * self.scale, self.scale, self.scale)
+        
+        # finish
+        painter.end()
+        self.update()
+
+class TilePanel(qtw.QWidget):
+    """ Panel to select tile and tile properties. """
     # signal to share new properties
-    itemsSelected = qtc.pyqtSignal(bool, bool) # hflip, vflip
+    itemsSelected = qtc.pyqtSignal(bool, int, bool, bool) # priority, palette, hflip, vflip
 
     def __init__(self, mainApplication: object):
         super().__init__()
 
+        # define current palette
+        self.currentPalette = 0
+
         # set the tile picker
-        self.picker = ChunkPicker(64, mainApplication)
+        self.picker = TilePicker(64, mainApplication)
+
+        # set the palette picker
+        self.palPicker = PalettePicker(15, mainApplication)
 
         # define the attribute buttons
+        self.priorityButton = qtw.QPushButton("Priority", self)
         self.hFlipButton = qtw.QPushButton("Horizontal Flip", self)
         self.vFlipButton = qtw.QPushButton("Vertical Flip", self)
 
         # make buttons toggleable
+        self.priorityButton.setCheckable(True)
         self.hFlipButton.setCheckable(True)
         self.vFlipButton.setCheckable(True)
 
         # link buttons to color change
+        self.priorityButton.clicked.connect(self.PriorityButtonPressed)
+        self.PriorityButtonPressed()
         self.hFlipButton.clicked.connect(self.hFlipButtonPressed)
         self.hFlipButtonPressed()
         self.vFlipButton.clicked.connect(self.vFlipButtonPressed)
         self.vFlipButtonPressed()
 
-        # define chunk picker layout
+        # define tile picker layout
         pickerLayout = qtw.QVBoxLayout()
-        pickerLayout.addWidget(qtw.QLabel("Chunk Select"))
+        pickerLayout.addWidget(qtw.QLabel("Tile Select"))
         pickerLayout.addWidget(self.picker)
         pickerLayout.addStretch()
 
-        # define chunk attribute layout
+        # define tile attribute layout
         attributeLayout = qtw.QVBoxLayout()
-        attributeLayout.addWidget(qtw.QLabel("\tChunk Attributes"))
+        attributeLayout.addWidget(qtw.QLabel("\tTile Attributes"))
+        attributeLayout.addWidget(self.priorityButton)
+        attributeLayout.addWidget(self.palPicker)
         attributeLayout.addWidget(self.hFlipButton)
         attributeLayout.addWidget(self.vFlipButton)
         attributeLayout.addStretch()
@@ -193,7 +257,28 @@ class ChunkPanel(qtw.QWidget):
         self.setFixedWidth(340)
 
         # link choosing items to setting properties
+        self.palPicker.paletteSelected.connect(self.PaletteChange)
         self.itemsSelected.connect(self.picker.SetProperties)
+    
+    def PaletteChange(self, pal: int):
+        """ Palette is changed. """
+        self.currentPalette = pal # change palette
+        self.EmitAttributes() # emit
+    
+    def PriorityButtonPressed(self):
+        """ Priority button is toggled. """
+        # see if button checked or not
+        if self.priorityButton.isChecked():
+            # the button just go checked
+            self.priorityButton.setText("High Priority")
+            self.priorityButton.setStyleSheet("background-color: green;")
+        else:
+            # the button just got unchecked
+            self.priorityButton.setText("Low Priority")
+            self.priorityButton.setStyleSheet("background-color: red;")
+        
+        # emit
+        self.EmitAttributes()
     
     def hFlipButtonPressed(self):
         """ Horizontal flip button is toggled. """
@@ -227,10 +312,10 @@ class ChunkPanel(qtw.QWidget):
     
     def EmitAttributes(self):
         """ Emit all the attributes of the tile selection. """
-        self.itemsSelected.emit(self.hFlipButton.isChecked(), self.vFlipButton.isChecked())
+        self.itemsSelected.emit(self.priorityButton.isChecked(), self.currentPalette, self.hFlipButton.isChecked(), self.vFlipButton.isChecked())
 
 class TilemapPanel(qtw.QGraphicsView):
-    """ Panel allowing you to edit the tilemap. """
+    """ Panel allowing you to edit tilemaps. """
     def __init__(self, mainApplication: object):
         super().__init__()
 
@@ -238,8 +323,9 @@ class TilemapPanel(qtw.QGraphicsView):
         self.mainApplication = mainApplication
         self.background = qtg.QPixmap("resources/images/transparentBackground.png").scaled(4040, 4040)
         self.mapSize = mainApplication.projectData.tilemap.size
-        self.chunkset = mainApplication.projectData.chunkset
-        self.currentChunkIndex = 0
+        self.currentPriority = False
+        self.currentTileIndex = 0
+        self.currentPaletteIndex = 0
         self.currentHFlip = False
         self.currentVFlip = False
 
@@ -248,12 +334,12 @@ class TilemapPanel(qtw.QGraphicsView):
         self.setScene(self.graphicsScene)
 
         # pixmap
-        self.pixmap = qtg.QPixmap(self.mapSize[0] * self.chunkset.chunkSize * 8, self.mapSize[1] * self.chunkset.chunkSize * 8)
+        self.pixmap = qtg.QPixmap(self.mapSize[0] * 8, self.mapSize[1] * 8)
         self.pixmap.fill(qtg.QColor(0, 0, 0, 0))
         self.pixmapItem = self.graphicsScene.addPixmap(self.pixmap)
 
         # draw a grid ontop of the pixmap
-        self.graphicsScene.addItem(common.GridOverlay((self.pixmap.width(), self.pixmap.height()), 8 * self.chunkset.chunkSize))
+        self.graphicsScene.addItem(common.GridOverlay((self.pixmap.width(), self.pixmap.height()), 8 * 8))
 
         # set scroll area and center
         self.setSceneRect(-5000, -5000, 10000, 10000)
@@ -268,6 +354,10 @@ class TilemapPanel(qtw.QGraphicsView):
         self.setVerticalScrollBarPolicy(qtc.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setTransformationAnchor(qtw.QGraphicsView.ViewportAnchor.NoAnchor)
         self.setResizeAnchor(qtw.QGraphicsView.ViewportAnchor.NoAnchor)
+
+        # set palette/color default
+        self.currentPaletteIndex = 0
+        self.currentTileIndex = 0
     
     def drawBackground(self, painter: qtg.QPainter, rect):
         """ Draws a non-scrolling background. """
@@ -283,7 +373,7 @@ class TilemapPanel(qtw.QGraphicsView):
 
         # left mouse click
         if event.button() == qtc.Qt.MouseButton.LeftButton:
-            self.DrawChunks(event) # draw colors
+            self.DrawTiles(event) # draw colors
     
     def mouseMoveEvent(self, event):
         """ When the mouse is moved. """
@@ -298,7 +388,7 @@ class TilemapPanel(qtw.QGraphicsView):
 
         # left mouse click
         if event.buttons() & qtc.Qt.MouseButton.LeftButton:
-            self.DrawChunks(event) # draw colors
+            self.DrawTiles(event) # draw colors
     
     def wheelEvent(self, event):
         """ When the mouse is scrolled. """
@@ -319,16 +409,18 @@ class TilemapPanel(qtw.QGraphicsView):
         delta = newPos - oldPos
         self.translate(delta.x(), delta.y())
 
-    def SetChunk(self, chunkIndex):
-        """ Change the current selected chunk. """
-        self.currentChunkIndex = chunkIndex
+    def SetTile(self, tileIndex):
+        """ Change the current selected tile. """
+        self.currentTileIndex = tileIndex
     
-    def SetProperties(self, hFlip: bool, vFlip: bool):
+    def SetProperties(self, priority: bool, palette: int, hFlip: bool, vFlip: bool):
         """ Set the properties of what is selected. """
+        self.currentPriority = priority
+        self.currentPaletteIndex = palette
         self.currentHFlip = hFlip
         self.currentVFlip = vFlip
     
-    def DrawChunks(self, event: qtg.QMouseEvent):
+    def DrawTiles(self, event: qtg.QMouseEvent):
         """ Draw tiles at event location. """
         # get the coords within the pixmap
         coords = (
@@ -341,64 +433,35 @@ class TilemapPanel(qtw.QGraphicsView):
             return
         
         # get coords within tilemap
-        withinX = coords[0] // (8 * self.chunkset.chunkSize)
-        withinY = coords[1] // (8 * self.chunkset.chunkSize)
+        withinX = coords[0] // 8
+        withinY = coords[1] // 8
 
         # apply to tilemap
-        self.mainApplication.projectData.tilemap.map[withinY][withinX] = data.Chunk(self.currentChunkIndex, self.currentHFlip, self.currentVFlip)
+        self.mainApplication.projectData.tilemap.map[withinY][withinX] = data.Tile(self.currentPaletteIndex, self.currentTileIndex, self.currentPriority, self.currentHFlip, self.currentVFlip)
         
-        # get the chunk data
-        chunkArray = self.mainApplication.projectData.chunkset.set[self.currentChunkIndex][:]
+        # get the tile data
+        tileArray = self.mainApplication.projectData.tileset.set[self.currentTileIndex][:]
+
+        # get the palette
+        palette = self.mainApplication.projectData.palettes[self.currentPaletteIndex].palette
 
         # apply flips
         if self.currentHFlip:
-            for y in range(self.chunkset.chunkSize):
-                chunkArray[y] = chunkArray[y][::-1]
+            for y in range(8):
+                tileArray[y] = tileArray[y][::-1]
         if self.currentVFlip:
-            chunkArray = chunkArray[::-1]
+            tileArray = tileArray[::-1]
 
         # create pixmap image
         pixmapImage = self.pixmap.toImage()
 
-        # get data
-        palettes = self.mainApplication.projectData.palettes
-        tileset = self.mainApplication.projectData.tileset.set[:]
-
-        # convert palette to 32bit ARGB (Alpha, Red, Green, Blue)
-        npPalettes = [numpy.array([
-            # 1st color in palette is transparent
-            ((0x00 if i == 0 else 0xFF) << 24) | (c.red << 16) | (c.green << 8) | c.blue
-            for i, c in enumerate(pal.palette)
-        ], dtype=numpy.uint32) for pal in palettes]
-
-        # access raw image buffer
-        pointer = pixmapImage.bits()
-        pointer.setsize(self.pixmap.width() * self.pixmap.height() * 4)
-        imageArray = numpy.ndarray((self.pixmap.height(), self.pixmap.width()), dtype=numpy.uint32, buffer=pointer)
-
-        # add each tile
-        for y in range(self.chunkset.chunkSize):
-            for x in range(self.chunkset.chunkSize):
-                # get the tile as an object
-                tileObject = chunkArray[y][x]
-
-                # create 2d array for tile
-                tile = tileset[tileObject.id]
-                tileData = npPalettes[tileObject.palette][numpy.array(tile, dtype=numpy.uint8)]
-
-                # apply flips based on flags
-                if tileObject.hFlip:
-                    for row in range(8):
-                        tileData[row] = tileData[row][::-1] # flip each row within the tile
-                if tileObject.vFlip:
-                    tileData = tileData[::-1] # flip the tile data horizontally
-
-                # get coords of tile
-                tileX = x * 8 + ((coords[0] // (self.chunkset.chunkSize * 8)) * (self.chunkset.chunkSize * 8))
-                tileY = y * 8 + ((coords[1] // (self.chunkset.chunkSize * 8)) * (self.chunkset.chunkSize * 8))
-
-                # draw the tile
-                imageArray[tileY:tileY+8, tileX:tileX+8] = tileData
+        # apply tile
+        for y in range(8):
+            for x in range(8):
+                # get the color's index
+                colorIndex = tileArray[y][x]
+                # set pixel colors
+                pixmapImage.setPixelColor(((coords[0] // 8) * 8) + x, ((coords[1] // 8) * 8) + y, qtg.QColor(palette[colorIndex].red, palette[colorIndex].green, palette[colorIndex].blue, 0 if colorIndex == 0 else 255))
 
         # convert back to pixmap and update pixmap item
         self.pixmap = qtg.QPixmap.fromImage(pixmapImage)
@@ -411,10 +474,9 @@ class TilemapPanel(qtw.QGraphicsView):
         height = self.pixmap.height()
         image = qtg.QImage(width, height, qtg.QImage.Format.Format_ARGB32)
 
-        # grab palette/tileset/chunkset/tilemap data
+        # grab palette/tileset data
         palettes = self.mainApplication.projectData.palettes
         tileset = self.mainApplication.projectData.tileset.set
-        chunkset = self.mainApplication.projectData.chunkset.set
         tilemap = self.mainApplication.projectData.tilemap.map
 
         # convert palettes to 32bit ARGB (Alpha, Red, Green, Blue)
@@ -429,38 +491,29 @@ class TilemapPanel(qtw.QGraphicsView):
         pointer.setsize(width * height * 4)
         imageArray = numpy.ndarray((height, width), dtype=numpy.uint32, buffer=pointer)
 
-        for chunkY in range(self.mapSize[1]):
-            for chunkX in range(self.mapSize[0]):
-                # get chunk data
-                chunkObject = tilemap[chunkY][chunkX]
-                chunkArray = chunkset[chunkObject.id][:]
+        for tileY in range(self.mapSize[1]):
+            for tileX in range(self.mapSize[0]):
+                # tile object
+                tileObject = tilemap[tileY][tileX]
+
+                # get the tile data
+                tileArray = tileset[tileObject.id]
 
                 # apply flips
-                if chunkObject.hFlip:
-                    for y in range(self.chunkset.chunkSize):
-                        chunkArray[y] = chunkArray[y][::-1]
-                if chunkObject.vFlip:
-                    chunkArray = chunkArray[::-1]
-                
-                # add each tile
-                for y in range(self.chunkset.chunkSize):
-                    for x in range(self.chunkset.chunkSize):
-                        # get the tile as an object
-                        tileObject = chunkArray[y][x]
+                if tileObject.hFlip:
+                    for y in range(8):
+                        tileArray[y] = tileArray[y][::-1]
+                if tileObject.vFlip:
+                    tileArray = tileArray[::-1]
 
-                        # create 2d array for tile
-                        tile = tileset[tileObject.id]
-                        tileData = npPalettes[tileObject.palette][numpy.array(tile, dtype=numpy.uint8)]
+                # draw the tile
+                for yWithinTile in range(8):
+                    for xWithinTile in range(8):
+                        # get the pixel's coords
+                        pixelX, pixelY = (tileX * 8) + xWithinTile, (tileY * 8) + yWithinTile
 
-                        # apply flips based on flags
-                        if tileObject.hFlip:
-                            for row in range(8):
-                                tileData[row] = tileData[row][::-1] # flip each row within the tile
-                        if tileObject.vFlip:
-                            tileData = tileData[::-1] # flip the tile data horizontally
-
-                        tileX, tileY = (chunkX * self.chunkset.chunkSize * 8) + (x * 8), (chunkY * self.chunkset.chunkSize * 8) + (y * 8)
-                        imageArray[tileY:tileY+8, tileX:tileX+8] = tileData
+                        # set pixel colors
+                        imageArray[pixelY, pixelX] = npPalettes[tileObject.palette][tileArray[yWithinTile][xWithinTile]]
         
         # convert image to pixmap and apply
         self.pixmap = qtg.QPixmap.fromImage(image)
@@ -481,14 +534,14 @@ class TilemapEditor(qtw.QWidget):
         separator.setLineWidth(2)
 
         # define panels
-        self.chunkPanel = ChunkPanel(mainApplication)
+        self.tilePanel = TilePanel(mainApplication)
         self.tilemapPanel = TilemapPanel(mainApplication)
 
         # connect signals
-        self.chunkPanel.itemsSelected.connect(self.tilemapPanel.SetProperties)
-        self.chunkPanel.picker.selectedChunk.connect(self.tilemapPanel.SetChunk)
+        self.tilePanel.itemsSelected.connect(self.tilemapPanel.SetProperties)
+        self.tilePanel.picker.tileSelected.connect(self.tilemapPanel.SetTile)
 
         # add the panels
-        layout.addWidget(self.chunkPanel)
+        layout.addWidget(self.tilePanel)
         layout.addWidget(separator)
         layout.addWidget(self.tilemapPanel)

@@ -145,12 +145,9 @@ def ExtractTilesetBin(bin: list[int]) -> data.Tileset:
     #                                        get each row of a tile -------------- for every row ---- for every tile    
     return data.Tileset(len(genesisTiles), [[[tile[(y * 8) + x] for x in range(8)] for y in range(8)] for tile in genesisTiles])
 
-def ExtractChunksetBin(bin: list[int], chunkSize: int) -> data.Chunkset:
-    """ Extract chunkset data from binary byte list. """
-    # get the tiles/bytes per chunk
-    tilesPerChunk = (chunkSize * chunkSize)
-    
-    # convert data in tiles
+def ExtractTilemapBin(bin: list[int], size: tuple[int, int]) -> data.Tilemap:
+    """ Extract tilemap data from binary byte list. """
+    # convert into tiles
     tiles = []
     for i in range(0, len(bin), 2):
         # get all tile data
@@ -162,28 +159,9 @@ def ExtractChunksetBin(bin: list[int], chunkSize: int) -> data.Chunkset:
         id = tileData & 0b011111111111
         tiles.append(data.Tile(palette, id, priority, hFlip, vFlip))
 
-    # seperate tiles into chunks
-    chunks = [tiles[i:i+tilesPerChunk] for i in range(0, len(tiles), tilesPerChunk)]
-
-    # convert into 2d arrays and return
-    #                                              get row of chunk ----------------------------------- add each row to chunk ---- for every chunk
-    return data.Chunkset(len(chunks), chunkSize, [[chunk[(y * chunkSize):((y * chunkSize) + chunkSize)] for y in range(chunkSize)] for chunk in chunks])
-
-def ExtractTilemapBin(bin: list[int], size: tuple[int, int]) -> data.Tilemap:
-    """ Extract tilemap data from binary byte list. """
-    # convert into chunks
-    chunks = []
-    for i in range(0, len(bin), 2):
-        # get all chunk data
-        chunkData = int.from_bytes(bin[i:i+2], "big")
-        hFlip = bool((chunkData >> 15) & 0b01)
-        vFlip = bool((chunkData >> 15) & 0b01)
-        id = chunkData & 0b0011111111111111
-        chunks.append(data.Chunk(id, hFlip, vFlip))
-
     # break into 2d array and return
     #                          get row of tilemap ---------------------------- add each row to tilemap
-    return data.Tilemap(size, [chunks[(y * size[0]):((y * size[0]) + size[0])] for y in range(size[0])])
+    return data.Tilemap(size, [tiles[(y * size[0]):((y * size[0]) + size[0])] for y in range(size[0])])
 
 def ExtractPaletteImg(imgpath: str) -> data.Palette:
     """ Extract palette data from bitmap image. """
@@ -251,25 +229,6 @@ def ExportTilesetAsm(tileset: data.Tileset) -> str:
     
     return asm
 
-def ExportChunksetAsm(chunkset: data.Chunkset) -> str:
-    """ Export chunkset as assembly data. """
-    # variable holding assembly file data
-    asm = "Chunkset:"
-    for chunk in chunkset.set:
-        # add space for next chunk
-        asm += "\n"
-
-        for row in chunk:
-            asm += "\n\tdc.w "
-            for i, tile in enumerate(row):
-                # convert tile to number data
-                tileNum = (tile.priority << 15) + (tile.palette << 13) + (tile.hFlip << 12) + (tile.vFlip << 11) + tile.id
-
-                # add the tile
-                asm += f"${hex(tileNum).replace("0x", ""):0>4}" + (", " if i + 1 < len(row) else "")
-    
-    return asm
-
 def ExportTilemapAsm(tilemap: data.Tilemap) -> str:
     """ Export tilemap as assembly data. """
     # variable holding assembly file data
@@ -278,11 +237,11 @@ def ExportTilemapAsm(tilemap: data.Tilemap) -> str:
         # add next row
         asm += "\n\tdc.w "
 
-        for i, chunk in enumerate(row):
+        for i, tile in enumerate(row):
             # convert tile to number data
-            chunkNum = (chunk.hFlip << 15) + (chunk.vFlip << 13) + chunk.id
+            tileNum = (tile.priority << 15) + (tile.palette << 13) + (tile.hFlip << 12) + (tile.vFlip << 11) + tile.id
 
             # add the tile
-            asm += f"${hex(chunkNum).replace("0x", ""):0>4}" + (", " if i + 1 < len(row) else "")
+            asm += f"${hex(tileNum).replace("0x", ""):0>4}" + (", " if i + 1 < len(row) else "")
     
     return asm

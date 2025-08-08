@@ -46,34 +46,14 @@ class Tile:
     hFlip: bool=False
     vFlip: bool=False
 
-class Chunkset:
-    """ Set of chunks. """
-    def __init__(self, size: int, chunkSize: int, set: list[list[list[Tile]]] | None=None):
-        # define globals
-        self.size = size
-        self.chunkSize = chunkSize
-
-        # fill with blank chunks to desired size
-        if not set:
-            self.set = [[[Tile(palette=0, id=0) for x in range(chunkSize)] for y in range(chunkSize)] for t in range(size)]
-        else:
-            self.set = set
-
-@dataclass
-class Chunk:
-    """ Reference to a chunk in the chunkset. """
-    id: int
-    hFlip: bool=False
-    vFlip: bool=False
-
 class Tilemap:
-    """ Map of chunks. """
-    def __init__(self, size: tuple[int, int], map: list[list[Chunk]] | None=None):
+    """ Map of tiles. """
+    def __init__(self, size: tuple[int, int], map: list[list[Tile]] | None=None):
         # define global
         self.size = size
 
-        # fill with blank chunks
+        # fill with blank tiles
         if not map:
-            self.map = [[Chunk(id=0) for x in range(size[0])] for y in range(size[1])]
+            self.map = [[Tile(palette=0, id=0) for x in range(size[0])] for y in range(size[1])]
         else:
             self.map = map

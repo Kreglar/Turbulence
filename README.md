@@ -1,6 +1,9 @@
-# Turbulence
+# Turbulence - Chunkless
 
 Tileset/map editor for Sega Genesis homebrew
+
+> [!IMPORTANT]
+> This is a version of Turbulence that does NOT support chunks. This is a branch of Turbulence for user who wish to not use chunks in their project. For the version with chunks, see the [main branch](https://github.com/Kreglar/Turbulence/tree/main).
 
 
 ## Description/Overview
@@ -9,9 +12,7 @@ Turbulence allows you to create and edit various graphical asset files for use i
 - Palettes -> 4, 16 color palettes with 3 bits per channel (Red, Green, and Blue)
 - Tiles -> 8x8 array of pixels with indexed colors from a palette
 - Tilesets -> a set of tiles
-- Chunks -> custom size 2D array of indexed tiles from the tileset with certain attributes
-- Chunksets -> set of chunks
-- Tilemaps -> custom size 2D array of indexed chunks from the chunkset with certain attributes
+- Tilemaps -> custom size 2D array of indexed tiles from the tileset with certain attributes
 
 
 ## Usage
@@ -33,7 +34,7 @@ Finally, copy the resources directory into the dist directory.
 Latest version: 1.0.2
 
 Highlights of version:
-- Fixes importing of chunksets and tilemaps
+- Fixes importing of tilemaps
 - added demo files for testing
 
 Refer to the [Changelog](CHANGELOG.md) for all new features, changes to old features, soon to be removed features, now removed features, and fixed bugs.

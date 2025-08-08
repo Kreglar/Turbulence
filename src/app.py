@@ -13,7 +13,6 @@ from utils import project
 from gui import mainAppWidgets
 from gui import paletteEditor
 from gui import tilesetEditor
-from gui import chunksetEditor
 from gui import tilemapEditor
 
 class Application(qtw.QMainWindow):
@@ -31,7 +30,7 @@ class Application(qtw.QMainWindow):
     def ResetMainGui(self):
         """ Creates/recreates the main enviroment. """
         # set window properties
-        self.setWindowTitle("Turbulence - " + self.filename)
+        self.setWindowTitle("Turbulence Chunkless - " + self.filename)
         self.setGeometry(100, 100, 1400, 900)
 
         # set menubar
@@ -46,9 +45,6 @@ class Application(qtw.QMainWindow):
         # - tileset editor
         self.tileEdit = tilesetEditor.TilesetEditor(self)
         self.editors.addTab(self.tileEdit, "Tileset")
-        # - chunkset editor
-        self.chunkEdit = chunksetEditor.ChunksetEditor(self)
-        self.editors.addTab(self.chunkEdit, "Chunkset")
         # - tilemap editor
         self.mapEdit = tilemapEditor.TilemapEditor(self)
         self.editors.addTab(self.mapEdit, "Tilemap")
@@ -61,33 +57,21 @@ class Application(qtw.QMainWindow):
             # -- tileset editor
             pv.paletteChange.connect(self.tileEdit.colorPanel.picker.ResetImage)
             pv.paletteChange.connect(self.tileEdit.tilesetPanel.ResetImage)
-            # -- chunkset editor
-            pv.paletteChange.connect(self.chunkEdit.tilePanel.picker.ResetImage)
-            pv.paletteChange.connect(self.chunkEdit.tilePanel.palPicker.ResetImage)
-            pv.paletteChange.connect(self.chunkEdit.chunksetPanel.ResetImage)
             # -- tilemap editor
-            pv.paletteChange.connect(self.mapEdit.chunkPanel.picker.ResetImage)
+            pv.paletteChange.connect(self.mapEdit.tilePanel.picker.ResetImage)
+            pv.paletteChange.connect(self.mapEdit.tilePanel.palPicker.ResetImage)
             pv.paletteChange.connect(self.mapEdit.tilemapPanel.ResetImage)
         # - change in tile
-        # -- chunkset editor
-        self.tileEdit.tilesetPanel.tileChange.connect(self.chunkEdit.tilePanel.picker.ResetImage)
-        self.tileEdit.tilesetPanel.tileChange.connect(self.chunkEdit.chunksetPanel.ResetImage)
-        # -- tilemap editor
-        self.tileEdit.tilesetPanel.tileChange.connect(self.mapEdit.chunkPanel.picker.ResetImage)
+        self.tileEdit.tilesetPanel.tileChange.connect(self.mapEdit.tilePanel.picker.ResetImage)
         self.tileEdit.tilesetPanel.tileChange.connect(self.mapEdit.tilemapPanel.ResetImage)
-        # - change in chunk
-        self.chunkEdit.chunksetPanel.chunkChange.connect(self.mapEdit.chunkPanel.picker.ResetImage)
-        self.chunkEdit.chunksetPanel.chunkChange.connect(self.mapEdit.tilemapPanel.ResetImage)
 
         # reset everything
         for i in range(4):
             self.palEdit.palettePanel.visuals[i].ResetImage()
         self.tileEdit.colorPanel.picker.ResetImage()
         self.tileEdit.tilesetPanel.ResetImage()
-        self.chunkEdit.tilePanel.picker.ResetImage()
-        self.chunkEdit.tilePanel.palPicker.ResetImage()
-        self.chunkEdit.chunksetPanel.ResetImage()
-        self.mapEdit.chunkPanel.picker.ResetImage()
+        self.mapEdit.tilePanel.picker.ResetImage()
+        self.mapEdit.tilePanel.palPicker.ResetImage()
         self.mapEdit.tilemapPanel.ResetImage()
     
     def SaveNewProjectFile(self):
@@ -125,21 +109,11 @@ class Application(qtw.QMainWindow):
                 "set": self.projectData.tileset.set
             },
 
-            "chunkset": {
-                "size": self.projectData.chunkset.size,
-                "chunkSize": self.projectData.chunkset.chunkSize,
-                "set": [
-                    [
-                        [(tile.palette, tile.id, tile.priority, tile.hFlip, tile.vFlip) for tile in row] for row in chunk
-                    ] for chunk in self.projectData.chunkset.set
-                ]
-            },
-
             "tilemap": {
                 "size": self.projectData.tilemap.size,
                 "map": [
                     [
-                        (chunk.id, chunk.hFlip, chunk.vFlip) for chunk in row
+                        (tile.palette, tile.id, tile.priority, tile.hFlip, tile.vFlip) for tile in row
                     ] for row in self.projectData.tilemap.map
                 ]
             }
@@ -175,37 +149,19 @@ class Application(qtw.QMainWindow):
         # redefine tileset with json data
         self.projectData.tileset = data.Tileset(jsonData["tileset"]["size"], jsonData["tileset"]["set"])
         
-        # redefine chunkset with json data
-        self.projectData.chunkset = data.Chunkset(
-            jsonData["chunkset"]["size"],
-            jsonData["chunkset"]["chunkSize"],
-
-            [
-                [
-                    [
-                        data.Tile(
-                            tile[0], # palette index
-                            tile[1], # tile id
-                            tile[2], # tile priority
-                            tile[3], # tile horizontal flip
-                            tile[4] # tile vertical flip
-                        ) for tile in row
-                    ] for row in chunk
-                ] for chunk in jsonData["chunkset"]["set"]
-            ]
-        )
-        
         # redefine tilemap with json data
         self.projectData.tilemap = data.Tilemap(
             jsonData["tilemap"]["size"],
 
             [
                 [
-                    data.Chunk(
-                        chunk[0], # chunk id
-                        chunk[1], # chunk horizontal flip
-                        chunk[2] # chunk vertical flip
-                    ) for chunk in row
+                    data.Tile(
+                        tile[0], # palette index
+                        tile[1], # tile id
+                        tile[2], # tile priority
+                        tile[3], # tile horizontal flip
+                        tile[4] # tile vertical flip
+                    ) for tile in row
                 ] for row in jsonData["tilemap"]["map"]
             ]
         )
@@ -270,34 +226,6 @@ class Application(qtw.QMainWindow):
             # reset gui
             self.ResetMainGui()
 
-        elif type == "Chunkset":
-            # create file dialog
-            dialog = qtw.QFileDialog(self)
-            dialog.setFileMode(qtw.QFileDialog.FileMode.ExistingFiles)
-            dialog.setNameFilter("All Files (*.*);;Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
-            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
-
-            # if a file is not chosen
-            if not (dialog.exec() and dialog.selectedFiles()):
-                return
-            
-            # get chunksize
-            chunkSize, okPressed = qtw.QInputDialog.getInt(self, "Get Chunk Size", "What is the side length (in tiles) of each chunk?", 4, 1, 100, 1)
-            if not okPressed:
-                return
-            
-            file = dialog.selectedFiles()[0] # we only want the first file
-
-            # compare file extension
-            ext = pathlib.Path(file).suffix
-            if ext == ".asm" or ext == ".s":
-                self.projectData.chunkset = files.ExtractChunksetBin(files.ExtractBinDataAsm(file), chunkSize)
-            elif ext == ".bin":
-                self.projectData.chunkset = files.ExtractChunksetBin(files.ExtractBytes(file), chunkSize)
-
-            # reset gui
-            self.ResetMainGui()
-
         elif type == "Tilemap":
             # create file dialog
             dialog = qtw.QFileDialog(self)
@@ -310,10 +238,10 @@ class Application(qtw.QMainWindow):
                 return
             
             # get map size
-            mapSizeH, okPressed = qtw.QInputDialog.getInt(self, "Get Map Size", "What is the horizontal length (in chunks) of the map?", 64, 1, 1000, 1)
+            mapSizeH, okPressed = qtw.QInputDialog.getInt(self, "Get Map Size", "What is the horizontal length (in tiles) of the map?", 256, 1, 1000, 1)
             if not okPressed:
                 return
-            mapSizeV, okPressed = qtw.QInputDialog.getInt(self, "Get Map Size", "What is the vertical length (in chunks) of the map?", 32, 1, 1000, 1)
+            mapSizeV, okPressed = qtw.QInputDialog.getInt(self, "Get Map Size", "What is the vertical length (in tiles) of the map?", 128, 1, 1000, 1)
             if not okPressed:
                 return
             
@@ -370,27 +298,6 @@ class Application(qtw.QMainWindow):
             if ext == ".asm" or ext == ".s":
                 with open(file, "w") as f:
                     f.write(files.ExportTilesetAsm(self.projectData.tileset))
-            elif ext == ".bin":
-                pass
-
-        elif type == "Chunkset":
-            # create file dialog
-            dialog = qtw.QFileDialog(self)
-            dialog.setFileMode(qtw.QFileDialog.FileMode.AnyFile)
-            dialog.setNameFilter("Assembly Files (*.asm, *.s);;Binary Files (*.bin)")
-            dialog.setViewMode(qtw.QFileDialog.ViewMode.Detail)
-
-            # if a file is not chosen
-            if not (dialog.exec() and dialog.selectedFiles()):
-                return
-            
-            file = dialog.selectedFiles()[0] # we only want the first file
-
-            # compare file extension
-            ext = pathlib.Path(file).suffix
-            if ext == ".asm" or ext == ".s":
-                with open(file, "w") as f:
-                    f.write(files.ExportChunksetAsm(self.projectData.chunkset))
             elif ext == ".bin":
                 pass
 
