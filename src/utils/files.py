@@ -243,7 +243,7 @@ def ExportTilemapAsm(tilemap: data.Tilemap) -> str:
             tileNum = (tile.priority << 15) + (tile.palette << 13) + (tile.hFlip << 12) + (tile.vFlip << 11) + tile.id
 
             # add the tile
-            asm += f"${hex(tileNum).replace("0x", ""):0>4}" + (", " if i + 1 < len(row) else "")
+            asm += f"${hex(tileNum).replace("0x", ""):0>4}" + ("" if (i + 1) % 16 == 0 else ", ")
 
         # add spacing for each row
         asm += "\n"
