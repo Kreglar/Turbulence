@@ -234,14 +234,18 @@ def ExportTilemapAsm(tilemap: data.Tilemap) -> str:
     # variable holding assembly file data
     asm = "Tilemap:"
     for row in tilemap.map:
-        # add next row
-        asm += "\n\tdc.w "
-
         for i, tile in enumerate(row):
+            # lines can only be so long
+            if i % 16 == 0:
+                asm += "\n\tdc.w "
+
             # convert tile to number data
             tileNum = (tile.priority << 15) + (tile.palette << 13) + (tile.hFlip << 12) + (tile.vFlip << 11) + tile.id
 
             # add the tile
             asm += f"${hex(tileNum).replace("0x", ""):0>4}" + (", " if i + 1 < len(row) else "")
+
+        # add spacing for each row
+        asm += "\n"
     
     return asm
