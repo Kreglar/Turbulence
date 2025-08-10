@@ -154,8 +154,8 @@ def ExtractTilemapBin(bin: list[int], size: tuple[int, int]) -> data.Tilemap:
         tileData = int.from_bytes(bin[i:i+2], "big")
         priority = bool((tileData >> 15) & 0b01)
         palette = (tileData >> 13) & 0b11
-        hFlip = bool((tileData >> 12) & 0b01)
-        vFlip = bool((tileData >> 11) & 0b01)
+        vFlip = bool((tileData >> 12) & 0b01)
+        hFlip = bool((tileData >> 11) & 0b01)
         id = tileData & 0b011111111111
         tiles.append(data.Tile(palette, id, priority, hFlip, vFlip))
 
@@ -240,7 +240,7 @@ def ExportTilemapAsm(tilemap: data.Tilemap) -> str:
                 asm += "\n\tdc.w "
 
             # convert tile to number data
-            tileNum = (tile.priority << 15) + (tile.palette << 13) + (tile.hFlip << 12) + (tile.vFlip << 11) + tile.id
+            tileNum = (tile.priority << 15) + (tile.palette << 13) + (tile.vFlip << 12) + (tile.hFlip << 11) + tile.id
 
             # add the tile
             asm += f"${hex(tileNum).replace("0x", ""):0>4}" + ("" if (i + 1) % 16 == 0 else ", ")
